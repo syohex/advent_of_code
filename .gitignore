@@ -1,0 +1,16 @@
+.idea/
+.vscode/
+
+# C++
+*.o
+*.exe
+*.out
+*.ilk
+*.pdb
+*~
+*.swp
+*.exp
+*.lib
+
+# Database
+*.db
