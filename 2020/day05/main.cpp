@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <set>
 
 namespace {
 
@@ -36,6 +37,21 @@ int Solve01(const std::vector<std::string> &strs) {
     return max;
 }
 
+int Solve02(const std::vector<std::string> &strs) {
+    std::set<int> s;
+    for (const auto &str : strs) {
+        s.insert(ToSeatID(str));
+    }
+
+    for (int id : s) {
+        if (s.find(id + 1) == s.end() && s.find(id + 2) != s.end()) {
+            return id + 1;
+        }
+    }
+
+    return -1;
+}
+
 void test01() {
     assert(ToSeatID("FBFBBFFRLR") == 357);
 
@@ -63,6 +79,7 @@ int main() {
     }
 
     std::cout << "Part01: " << Solve01(input) << std::endl;
+    std::cout << "Part02: " << Solve02(input) << std::endl;
 
     return 0;
 }
