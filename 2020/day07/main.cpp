@@ -12,57 +12,62 @@ namespace {
 
 using WeightInfo = std::map<std::string, std::map<std::string, std::uint64_t>>;
 
-std::set<std::string> FindBaseBags(const WeightInfo &weight_info) {
-    std::set<std::string> ret;
-    for (const auto &it : weight_info) {
-        if (it.second.empty()) {
-            ret.insert(it.first);
-        }
-    }
+int Solve01(const WeightInfo &weight_info, const std::string &color) {
+    std::set<std::string> hold_bags;
 
-    return ret;
-}
-
-WeightInfo Normalization(const WeightInfo &weight_info) {
-    std::set<std::string> base_bags = FindBaseBags(weight_info);
-    WeightInfo resolved_bags;
-    for (const auto &bag : base_bags) {
-        resolved_bags[bag][bag] = 1;
-    }
-
-    size_t resolved = base_bags.size();
-    while (resolved < weight_info.size()) {
+    while (true) {
+        int checked = 0;
         for (const auto &it : weight_info) {
-            const auto &bag_color = it.first;
-            if (resolved_bags.find(bag_color) != resolved_bags.end()) {
+            if (it.first == color || hold_bags.find(it.first) != hold_bags.end()) {
                 continue;
             }
 
-            auto &bag_weight = it.second;
-            size_t resolved_colors = 0;
-            std::map<std::string, std::uint64_t> normalized_weight;
-            for (const auto &it2 : bag_weight) {
-                const auto &color = it2.first;
-                const auto &count = it2.second;
+            for (const auto &it2 : it.second) {
+                if (it2.first == color || hold_bags.find(it2.first) != hold_bags.end()) {
+                    ++checked;
+                    hold_bags.insert(it.first);
+                    break;
+                }
+            }
+        }
 
-                if (resolved_bags.find(color) != resolved_bags.end()) {
-                    ++resolved_colors;
-                    for (const auto &base_color_it : resolved_bags[color]) {
-                        const auto &base_color = base_color_it.first;
-                        auto base_count = base_color_it.second;
-                        normalized_weight[base_color] += count * base_count;
-                    }
+        if (checked == 0) {
+            break;
+        }
+    }
+
+    return static_cast<int>(hold_bags.size());
+}
+
+int Solve02(const WeightInfo &weight_info, const std::string &color) {
+    std::map<std::string, std::uint64_t> bag_count;
+    for (const auto &it : weight_info) {
+        if (it.second.empty()) {
+            bag_count[it.first] = 1;
+        }
+    }
+
+    while (bag_count.size() < weight_info.size()) {
+        for (const auto &it : weight_info) {
+            int resolved = 0;
+            std::uint64_t sum = 0;
+
+            for (const auto &it2 : it.second) {
+                const auto &element_bag = it2.first;
+                const auto &element_count = it2.second;
+                if (bag_count.find(element_bag) != bag_count.end()) {
+                    sum += element_count * bag_count[element_bag];
+                    ++resolved;
                 }
             }
 
-            if (resolved_colors == bag_weight.size()) {
-                resolved_bags[bag_color] = std::move(normalized_weight);
-                ++resolved;
+            if (resolved == it.second.size()) {
+                bag_count[it.first] = sum + 1;
             }
         }
     }
 
-    return resolved_bags;
+    return bag_count.at(color) - 1; // remove it self
 }
 
 WeightInfo ParseBagInfo(const std::string &input) {
@@ -103,36 +108,6 @@ WeightInfo ParseBagInfo(const std::string &input) {
     return ret;
 }
 
-int CountCanHoldBack(const WeightInfo &weight_info, const std::string &color) {
-    assert(weight_info.find(color) != weight_info.end());
-
-    int ret = 0;
-    const auto &my_weight = weight_info.at(color);
-    for (const auto &it : weight_info) {
-        if (it.first == color) {
-            continue;
-        }
-
-        size_t count = 0;
-        for (const auto &it2 : it.second) {
-            if (it2.second >= my_weight.at(it2.first)) {
-                ++count;
-            }
-        }
-
-        if (count == my_weight.size()) {
-            printf("%s -> ", it.first.c_str());
-            for (const auto &it2 : it.second) {
-                printf(" %s:%lld ", it2.first.c_str(), static_cast<long long int>(it2.second));
-            }
-            printf("\n");
-            ++ret;
-        }
-    }
-
-    return ret;
-}
-
 void Test01() {
     // clang-format off
     std::string input(R"(light red bags contain 1 bright white bag, 2 muted yellow bags.
@@ -164,35 +139,31 @@ dotted black bags contain no other bags.)");
     assert(weight_info["faded blue"].empty());
     assert(weight_info["dotted black"].empty());
 
-    auto base_bags = FindBaseBags(weight_info);
-    assert((base_bags == std::set<std::string>{"faded blue", "dotted black"}));
+    assert(Solve01(weight_info, "shiny gold") == 4);
+}
 
-    auto normalized = Normalization(weight_info);
-    assert(normalized.size() == 9);
-    assert(normalized["light red"]["faded blue"] == 83);
-    assert(normalized["light red"]["dotted black"] == 80);
-    assert(normalized["dark orange"]["faded blue"] == 179);
-    assert(normalized["dark orange"]["dotted black"] == 176);
-    assert(normalized["bright white"]["faded blue"] == 13);
-    assert(normalized["bright white"]["dotted black"] == 16);
-    assert(normalized["muted yellow"]["faded blue"] == 35);
-    assert(normalized["muted yellow"]["dotted black"] == 32);
-    assert(normalized["shiny gold"]["faded blue"] == 13);
-    assert(normalized["shiny gold"]["dotted black"] == 16);
-    assert(normalized["dark olive"]["faded blue"] == 3);
-    assert(normalized["dark olive"]["dotted black"] == 4);
-    assert(normalized["vibrant plum"]["faded blue"] == 5);
-    assert(normalized["vibrant plum"]["dotted black"] == 6);
-    assert(normalized["faded blue"]["faded blue"] == 1);
-    assert(normalized["dotted black"]["dotted black"] == 1);
+void Test02() {
+    // clang-format off
+    std::string input(R"(shiny gold bags contain 2 dark red bags.
+dark red bags contain 2 dark orange bags.
+dark orange bags contain 2 dark yellow bags.
+dark yellow bags contain 2 dark green bags.
+dark green bags contain 2 dark blue bags.
+dark blue bags contain 2 dark violet bags.
+dark violet bags contain no other bags.)");
+    // clang-format on
 
-    assert(CountCanHoldBack(normalized, "shiny gold") == 4);
+    auto weight_info = ParseBagInfo(input);
+    assert(weight_info.size() == 7);
+
+    assert(Solve02(weight_info, "shiny gold") == 126);
 }
 
 } // namespace
 
 int main() {
     Test01();
+    Test02();
 
     std::string input;
     std::string line;
@@ -202,7 +173,7 @@ int main() {
     }
 
     WeightInfo weight_info = ParseBagInfo(input);
-    WeightInfo normalized = Normalization(weight_info);
-    std::cout << "Part1: " << CountCanHoldBack(normalized, "shiny gold") << std::endl;
+    std::cout << "Part1: " << Solve01(weight_info, "shiny gold") << std::endl;
+    std::cout << "Part2: " << Solve02(weight_info, "shiny gold") << std::endl;
     return 0;
 }
