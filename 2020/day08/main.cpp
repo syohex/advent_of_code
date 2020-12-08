@@ -46,11 +46,11 @@ std::vector<Instruction> ParseCode(const std::vector<std::string> &code) {
     return ret;
 }
 
-int ExecuteInstructions(const std::vector<Instruction> &instructions) {
+int ExecuteInstructions(const std::vector<Instruction> &instructions, bool &finish) {
     std::vector<int> execute_count(instructions.size());
     int value = 0;
     int program_counter = 0;
-    while (true) {
+    while (program_counter >= 0 && program_counter < static_cast<int>(instructions.size())) {
         ++execute_count[program_counter];
         if (execute_count[program_counter] >= 2) {
             break;
@@ -71,6 +71,7 @@ int ExecuteInstructions(const std::vector<Instruction> &instructions) {
         }
     }
 
+    finish = program_counter == static_cast<int>(instructions.size());
     return value;
 }
 
@@ -101,13 +102,63 @@ void Test01() {
     assert((insns[7] == Instruction{InstructionType::kJmp, -4}));
     assert((insns[8] == Instruction{InstructionType::kAcc, 6}));
 
-    assert(ExecuteInstructions(insns) == 5);
+    bool finish;
+    assert(ExecuteInstructions(insns, finish) == 5);
+}
+
+int Solve02(std::vector<Instruction> &insns) {
+    bool finish;
+    int count = 0;
+    for (auto &insn : insns) {
+        if (insn.type == InstructionType::kJmp) {
+            insn.type = InstructionType::kNop;
+
+            int ret = ExecuteInstructions(insns, finish);
+            if (finish) {
+                return ret;
+            }
+
+            insn.type = InstructionType::kJmp;
+        } else if (insn.type == InstructionType::kNop) {
+            insn.type = InstructionType::kJmp;
+            int ret = ExecuteInstructions(insns, finish);
+            if (finish) {
+                return ret;
+            }
+
+            insn.type = InstructionType::kNop;
+        }
+        ++count;
+    }
+
+    assert(!"never reach here");
+    return -1;
+}
+
+void Test02() {
+    // clang-format off
+    std::vector<std::string> code {
+        "nop +0",
+        "acc +1",
+        "jmp +4",
+        "acc +3",
+        "jmp -3",
+        "acc -99",
+        "acc +1",
+        "jmp -4",
+        "acc +6"
+    };
+    // clang-format on
+
+    auto insns = ParseCode(code);
+    assert(Solve02(insns) == 8);
 }
 
 } // namespace
 
 int main() {
     Test01();
+    Test02();
 
     std::vector<std::string> code;
     std::string line;
@@ -116,8 +167,9 @@ int main() {
     }
 
     auto insns = ParseCode(code);
-
-    std::cout << "Part01: " << ExecuteInstructions(insns) << std::endl;
+    bool finish;
+    std::cout << "Part01: " << ExecuteInstructions(insns, finish) << std::endl;
+    std::cout << "Part02: " << Solve02(insns) << std::endl;
 
     return 0;
 }
