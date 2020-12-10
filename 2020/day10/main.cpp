@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <vector>
 #include <map>
-#include <functional>
 
 namespace {
 
@@ -27,27 +26,21 @@ std::int64_t Solve01(std::vector<std::int64_t> &inputs) {
 }
 
 std::int64_t Solve02(std::vector<std::int64_t> &inputs) {
+    inputs.push_back(0);
     std::sort(inputs.begin(), inputs.end());
     inputs.push_back(inputs.back() + 3);
 
-    std::int64_t ret = 0;
-    std::function<void(size_t pos, std::int64_t prev)> f;
-    f = [&f, &ret, &inputs](size_t pos, std::int64_t prev) {
-        if (pos == inputs.size() - 1) {
-            ++ret;
-            return;
+    std::vector<std::int64_t> acc(inputs.size(), 0);
+    acc[0] = 1;
+    for (size_t i = 0; i < inputs.size(); ++i) {
+        for (size_t j = 0; j < i; ++j) {
+            if (inputs[i] - inputs[j] <= 3) {
+                acc[i] += acc[j];
+            }
         }
+    }
 
-        f(pos + 1, inputs[pos]);
-
-        auto diff = inputs[pos + 1] - prev;
-        if (diff <= 3) {
-            f(pos + 1, prev);
-        }
-    };
-
-    f(0, 0);
-    return ret;
+    return acc.back();
 }
 
 void Test01() {
