@@ -37,6 +37,10 @@ enum class Direction {
 struct Position {
     int x;
     int y;
+
+    bool operator==(const Position &other) const {
+        return x == other.x && y == other.y;
+    }
 };
 
 Command CharToCommand(char c) {
@@ -104,6 +108,34 @@ Direction Turn(int degrees, Direction current) {
     return dirs[pos];
 }
 
+Position TurnWayPoint(int degrees, const Position &way_point) {
+    assert(degrees % 90 == 0);
+
+    int count;
+    if (degrees >= 0) {
+        count = (degrees % 360) / 90;
+    } else {
+        int tmp = -1 * degrees;
+        tmp = (tmp % 360) / 90;
+        tmp = -1 * tmp;
+        count = tmp + 4;
+    }
+
+    switch (count) {
+    case 0:
+        return way_point;
+    case 1:
+        return Position{way_point.y, -way_point.x};
+    case 2:
+        return Position{-way_point.x, -way_point.y};
+    case 3:
+        return Position{-way_point.y, way_point.x};
+    default:
+        assert(!"never reach here");
+        return way_point;
+    }
+}
+
 int Solve01(const std::vector<Instruction> &insns) {
     Direction dir = Direction::kEast;
     Position pos{0, 0};
@@ -149,6 +181,40 @@ int Solve01(const std::vector<Instruction> &insns) {
     return static_cast<int>(std::abs(pos.x) + std::abs(pos.y));
 }
 
+int Solve02(const std::vector<Instruction> &insns) {
+    Position way_point{10, 1};
+    Position pos{0, 0};
+
+    for (const auto &insn : insns) {
+        switch (insn.command) {
+        case Command::kNorth:
+            way_point.y += insn.value;
+            break;
+        case Command::kSouth:
+            way_point.y -= insn.value;
+            break;
+        case Command::kEast:
+            way_point.x += insn.value;
+            break;
+        case Command::kWest:
+            way_point.x -= insn.value;
+            break;
+        case Command::kLeft:
+            way_point = TurnWayPoint(-1 * insn.value, way_point);
+            break;
+        case Command::kRight:
+            way_point = TurnWayPoint(insn.value, way_point);
+            break;
+        case Command::kForward:
+            pos.x += insn.value * way_point.x;
+            pos.y += insn.value * way_point.y;
+            break;
+        }
+    }
+
+    return static_cast<int>(std::abs(pos.x) + std::abs(pos.y));
+}
+
 void Test01() {
     // clang-format off
     std::vector<std::string> inputs {
@@ -176,10 +242,31 @@ void Test01() {
     assert(Solve01(insns) == 25);
 }
 
+void Test02() {
+    // clang-format off
+    std::vector<std::string> inputs {
+        "F10",
+        "N3",
+        "F7",
+        "R90",
+        "F11",
+    };
+    // clang-format on
+
+    auto insns = ParseInput(inputs);
+    assert((TurnWayPoint(90, Position{4, 10}) == Position{10, -4}));
+    assert((TurnWayPoint(180, Position{4, 10}) == Position{-4, -10}));
+    assert((TurnWayPoint(270, Position{4, 10}) == Position{-10, 4}));
+    assert((TurnWayPoint(360, Position{4, 10}) == Position{4, 10}));
+
+    assert(Solve02(insns) == 286);
+}
+
 } // namespace
 
 int main() {
     Test01();
+    Test02();
 
     std::vector<std::string> inputs;
     std::string line;
@@ -190,5 +277,6 @@ int main() {
     auto insns = ParseInput(inputs);
 
     std::cout << "Part01: " << Solve01(insns) << std::endl;
+    std::cout << "Part02: " << Solve02(insns) << std::endl;
     return 0;
 }
