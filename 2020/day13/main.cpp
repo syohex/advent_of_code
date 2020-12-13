@@ -75,12 +75,21 @@ std::int64_t Solve01(std::int64_t timeout, const std::vector<std::int64_t> bus_i
 }
 
 std::int64_t Solve02(const std::vector<BusDeparture> bus_ids) {
-    auto val = bus_ids[0].id;
+    std::vector<bool> checked(bus_ids.size(), false);
+    checked[0] = true;
+
+    auto base = bus_ids[0].id;
+    std::int64_t val = 0;
     for (std::int64_t i = 1;; ++i) {
-        val += bus_ids[0].id;
         bool ok = true;
+        val += base;
         for (size_t j = 1; j < bus_ids.size(); ++j) {
-            if ((val + bus_ids[j].offset) % bus_ids[j].id != 0) {
+            if ((val + bus_ids[j].offset) % bus_ids[j].id == 0) {
+                if (!checked[j]) {
+                    base *= bus_ids[j].id;
+                    checked[j] = true;
+                }
+            } else {
                 ok = false;
                 break;
             }
