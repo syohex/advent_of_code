@@ -69,15 +69,23 @@ void Test01() {
 }
 
 void Test02() {
-    
+    assert((Solve01(std::vector<std::int64_t>{0, 3, 6}, 30000000) == 175594));
+    assert((Solve01(std::vector<std::int64_t>{1, 3, 2}, 30000000) == 2578));
+    assert((Solve01(std::vector<std::int64_t>{2, 1, 3}, 30000000) == 3544142));
+    assert((Solve01(std::vector<std::int64_t>{1, 2, 3}, 30000000) == 261214));
+    assert((Solve01(std::vector<std::int64_t>{2, 3, 1}, 30000000) == 6895259));
+    assert((Solve01(std::vector<std::int64_t>{3, 2, 1}, 30000000) == 18));
+    assert((Solve01(std::vector<std::int64_t>{3, 1, 2}, 30000000) == 362));
 }
 
 } // namespace
 
 int main() {
     Test01();
+    Test02();
 
     std::vector<std::int64_t> inputs{2, 1, 10, 11, 0, 6};
     std::cout << "Part01: " << Solve01(inputs, 2020) << std::endl;
+    std::cout << "Part02: " << Solve01(inputs, 30000000) << std::endl;
     return 0;
 }
