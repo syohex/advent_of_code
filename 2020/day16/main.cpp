@@ -4,7 +4,9 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <set>
 #include <regex>
+#include <functional>
 
 namespace {
 
@@ -57,9 +59,12 @@ struct TicketData {
         return ret;
     }
 
-    int Solve02() {
-        int ret = 0;
+    std::vector<Ticket> CollectValidTickets() const {
+        std::vector<Ticket> v;
+
         for (const auto &near_by : near_by_tickets) {
+            bool all_ok = true;
+            ;
             for (auto number : near_by.numbers) {
                 bool valid = false;
                 for (const auto &it : rules) {
@@ -76,12 +81,76 @@ struct TicketData {
                 }
 
                 if (!valid) {
-                    ret += number;
+                    all_ok = false;
+                    break;
                 }
+            }
+
+            if (all_ok) {
+                v.push_back(near_by);
             }
         }
 
+        return v;
+    }
+
+    std::map<std::string, size_t> DicideNames(const std::vector<Ticket> &tickets) {
+        std::vector<std::string> rule_names;
+        for (const auto &it : rules) {
+            rule_names.push_back(it.first);
+        }
+
+        std::map<std::string, size_t> ret;
+        size_t limit = tickets[0].numbers.size();
+        std::function<void(size_t pos, const std::map<std::string, size_t> &acc)> f;
+        f = [&f, &rule_names, &tickets, this, limit, &ret](size_t pos, const std::map<std::string, size_t> &acc) {
+            if (pos == limit) {
+                ret = acc;
+                return;
+            }
+
+            for (const auto &rule_name : rule_names) {
+                if (acc.find(rule_name) != acc.end()) {
+                    continue;
+                }
+
+                bool all_ok = true;
+                for (const auto &ticket : tickets) {
+                    bool valid = false;
+                    for (const auto &rule : rules[rule_name]) {
+                        if (rule.Valid(ticket.numbers[pos])) {
+                            valid = true;
+                            break;
+                        }
+                    }
+
+                    if (!valid) {
+                        all_ok = false;
+                        break;
+                    }
+                }
+
+                if (all_ok) {
+                    auto tmp = acc;
+                    tmp[rule_name] = pos;
+                    f(pos + 1, tmp);
+                }
+            }
+        };
+
+        f(0, std::map<std::string, size_t>{});
+
+        for (const auto &it : ret) {
+            printf("@@ %s -> %zd\n", it.first.c_str(), it.second);
+        }
+
         return ret;
+    }
+
+    int Solve02() {
+        auto valid_tickets = CollectValidTickets();
+        auto indices = DicideNames(valid_tickets);
+        return 0;
     }
 };
 
@@ -194,10 +263,30 @@ nearby tickets:
     assert(ticket.Solve01() == 71);
 }
 
+void Test02() {
+    std::string input(R"(class: 0-1 or 4-19
+row: 0-5 or 8-19
+seat: 0-13 or 16-19
+
+your ticket:
+11,12,13
+
+nearby tickets:
+3,9,18
+15,1,5
+5,14,9)");
+
+    auto ticket = ParseInput(input);
+    assert(ticket.CollectValidTickets().size() == 3);
+
+    ticket.Solve02();
+}
+
 } // namespace
 
 int main() {
     Test01();
+    Test02();
 
     std::string input;
     std::string line;
@@ -207,5 +296,6 @@ int main() {
 
     auto ticket = ParseInput(input);
     std::cout << "Part01: " << ticket.Solve01() << std::endl;
+    std::cout << "Part02: " << ticket.Solve02() << std::endl;
     return 0;
 }
