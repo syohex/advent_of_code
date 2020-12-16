@@ -29,19 +29,15 @@ struct Rule {
     }
 };
 
-struct Ticket {
-    std::vector<int> numbers;
-};
-
 struct TicketData {
     std::vector<Rule> rules;
-    Ticket my_ticket;
-    std::vector<Ticket> near_by_tickets;
+    std::vector<int> my_ticket;
+    std::vector<std::vector<int>> near_by_tickets;
 
     int Solve01() {
         int ret = 0;
         for (const auto &near_by : near_by_tickets) {
-            for (auto number : near_by.numbers) {
+            for (auto number : near_by) {
                 bool valid = false;
                 for (const auto &rule : rules) {
                     if (rule.Valid(number)) {
@@ -59,13 +55,13 @@ struct TicketData {
         return ret;
     }
 
-    std::vector<Ticket> CollectValidTickets() const {
-        std::vector<Ticket> v;
+    std::vector<std::vector<int>> CollectValidTickets() const {
+        std::vector<std::vector<int>> v;
 
         for (const auto &near_by : near_by_tickets) {
             bool all_ok = true;
 
-            for (auto number : near_by.numbers) {
+            for (auto number : near_by) {
                 bool valid = false;
                 for (const auto &rule : rules) {
                     if (rule.Valid(number)) {
@@ -88,14 +84,14 @@ struct TicketData {
         return v;
     }
 
-    std::map<std::size_t, size_t> DicideNames(const std::vector<Ticket> &tickets) {
+    std::map<std::size_t, size_t> DicideNames(const std::vector<std::vector<int>> &tickets) {
         std::vector<std::string> rule_names;
         for (const auto &rule : rules) {
             rule_names.push_back(rule.name);
         }
 
         std::map<size_t, size_t> ret;
-        size_t limit = tickets[0].numbers.size();
+        size_t limit = tickets[0].size();
         std::function<void(size_t pos, const std::map<size_t, size_t> &acc)> f;
         f = [&f, &tickets, this, limit, &ret](size_t pos, const std::map<size_t, size_t> &acc) {
             if (pos == limit) {
@@ -110,7 +106,7 @@ struct TicketData {
 
                 bool valid = true;
                 for (const auto &ticket : tickets) {
-                    if (!rules[i].Valid(ticket.numbers[pos])) {
+                    if (!rules[i].Valid(ticket[pos])) {
                         valid = false;
                         break;
                     }
@@ -192,7 +188,7 @@ TicketData ParseInput(const std::string &input) {
             std::string number;
             while (std::getline(lss, number, ',')) {
                 int num = std::stoi(number);
-                ret.my_ticket.numbers.push_back(num);
+                ret.my_ticket.push_back(num);
             }
 
             break;
@@ -210,7 +206,7 @@ TicketData ParseInput(const std::string &input) {
                 numbers.push_back(num);
             }
 
-            ret.near_by_tickets.emplace_back(Ticket{numbers});
+            ret.near_by_tickets.emplace_back(std::move(numbers));
             break;
         }
         }
@@ -251,13 +247,13 @@ nearby tickets:
     assert(ticket.rules[2].ranges[1][0] == 45);
     assert(ticket.rules[2].ranges[1][1] == 50);
 
-    assert((ticket.my_ticket.numbers == std::vector<int>{7, 1, 14}));
+    assert((ticket.my_ticket == std::vector<int>{7, 1, 14}));
 
     assert(ticket.near_by_tickets.size() == 4);
-    assert((ticket.near_by_tickets[0].numbers == std::vector<int>{7, 3, 47}));
-    assert((ticket.near_by_tickets[1].numbers == std::vector<int>{40, 4, 50}));
-    assert((ticket.near_by_tickets[2].numbers == std::vector<int>{55, 2, 20}));
-    assert((ticket.near_by_tickets[3].numbers == std::vector<int>{38, 6, 12}));
+    assert((ticket.near_by_tickets[0] == std::vector<int>{7, 3, 47}));
+    assert((ticket.near_by_tickets[1] == std::vector<int>{40, 4, 50}));
+    assert((ticket.near_by_tickets[2] == std::vector<int>{55, 2, 20}));
+    assert((ticket.near_by_tickets[3] == std::vector<int>{38, 6, 12}));
 
     assert(ticket.Solve01() == 71);
 }
