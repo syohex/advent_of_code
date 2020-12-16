@@ -85,10 +85,9 @@ struct TicketData {
     }
 
     std::map<std::size_t, size_t> DicideNames(const std::vector<std::vector<std::int64_t>> &tickets) {
-        size_t limit = tickets[0].size();
         std::function<std::map<size_t, size_t>(size_t pos, const std::map<size_t, size_t> &acc)> f;
-        f = [&f, &tickets, this, limit](size_t pos, const std::map<size_t, size_t> &acc) -> std::map<size_t, size_t> {
-            if (pos == limit) {
+        f = [&f, &tickets, this](size_t pos, const std::map<size_t, size_t> &acc) -> std::map<size_t, size_t> {
+            if (pos == my_ticket.size()) {
                 return acc;
             }
 
