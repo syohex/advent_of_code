@@ -11,15 +11,21 @@
 namespace {
 
 struct Rule {
-    int min;
-    int max;
+    std::string name;
+    std::vector<std::vector<int>> ranges;
 
     bool operator==(const Rule &other) const {
-        return min == other.min && max == other.max;
+        return name == other.name && ranges == other.ranges;
     }
 
     bool Valid(int number) const {
-        return number >= min && number <= max;
+        for (const auto &range : ranges) {
+            if (number >= range[0] && number <= range[1]) {
+                return true;
+            }
+        }
+
+        return false;
     }
 };
 
@@ -28,7 +34,7 @@ struct Ticket {
 };
 
 struct TicketData {
-    std::map<std::string, std::vector<Rule>> rules;
+    std::vector<Rule> rules;
     Ticket my_ticket;
     std::vector<Ticket> near_by_tickets;
 
@@ -37,15 +43,9 @@ struct TicketData {
         for (const auto &near_by : near_by_tickets) {
             for (auto number : near_by.numbers) {
                 bool valid = false;
-                for (const auto &it : rules) {
-                    for (const auto &rule : it.second) {
-                        if (rule.Valid(number)) {
-                            valid = true;
-                            break;
-                        }
-                    }
-
-                    if (valid) {
+                for (const auto &rule : rules) {
+                    if (rule.Valid(number)) {
+                        valid = true;
                         break;
                     }
                 }
@@ -64,18 +64,12 @@ struct TicketData {
 
         for (const auto &near_by : near_by_tickets) {
             bool all_ok = true;
-            ;
+
             for (auto number : near_by.numbers) {
                 bool valid = false;
-                for (const auto &it : rules) {
-                    for (const auto &rule : it.second) {
-                        if (rule.Valid(number)) {
-                            valid = true;
-                            break;
-                        }
-                    }
-
-                    if (valid) {
+                for (const auto &rule : rules) {
+                    if (rule.Valid(number)) {
+                        valid = true;
                         break;
                     }
                 }
@@ -94,54 +88,46 @@ struct TicketData {
         return v;
     }
 
-    std::map<std::string, size_t> DicideNames(const std::vector<Ticket> &tickets) {
+    std::map<std::size_t, size_t> DicideNames(const std::vector<Ticket> &tickets) {
         std::vector<std::string> rule_names;
-        for (const auto &it : rules) {
-            rule_names.push_back(it.first);
+        for (const auto &rule : rules) {
+            rule_names.push_back(rule.name);
         }
 
-        std::map<std::string, size_t> ret;
+        std::map<size_t, size_t> ret;
         size_t limit = tickets[0].numbers.size();
-        std::function<void(size_t pos, const std::map<std::string, size_t> &acc)> f;
-        f = [&f, &rule_names, &tickets, this, limit, &ret](size_t pos, const std::map<std::string, size_t> &acc) {
+        std::function<void(size_t pos, const std::map<size_t, size_t> &acc)> f;
+        f = [&f, &tickets, this, limit, &ret](size_t pos, const std::map<size_t, size_t> &acc) {
             if (pos == limit) {
                 ret = acc;
                 return;
             }
 
-            for (const auto &rule_name : rule_names) {
-                if (acc.find(rule_name) != acc.end()) {
+            for (size_t i = 0; i < rules.size(); ++i) {
+                if (acc.find(i) != acc.end()) {
                     continue;
                 }
 
-                bool all_ok = true;
+                bool valid = true;
                 for (const auto &ticket : tickets) {
-                    bool valid = false;
-                    for (const auto &rule : rules[rule_name]) {
-                        if (rule.Valid(ticket.numbers[pos])) {
-                            valid = true;
-                            break;
-                        }
-                    }
-
-                    if (!valid) {
-                        all_ok = false;
+                    if (!rules[i].Valid(ticket.numbers[pos])) {
+                        valid = false;
                         break;
                     }
                 }
 
-                if (all_ok) {
+                if (!valid) {
                     auto tmp = acc;
-                    tmp[rule_name] = pos;
+                    tmp[i] = pos;
                     f(pos + 1, tmp);
                 }
             }
         };
 
-        f(0, std::map<std::string, size_t>{});
+        f(0, std::map<size_t, size_t>{});
 
         for (const auto &it : ret) {
-            printf("@@ %s -> %zd\n", it.first.c_str(), it.second);
+            printf("@@ %s -> %zd\n", rules[it.first].name.c_str(), it.second);
         }
 
         return ret;
@@ -176,16 +162,20 @@ TicketData ParseInput(const std::string &input) {
                 break;
             }
 
+            Rule rule;
             size_t pos = line.find(':');
-            std::string name = line.substr(0, pos);
+            rule.name = line.substr(0, pos);
             std::smatch match;
+
             while (std::regex_search(line, match, range_re)) {
                 int min = std::stoi(match[1]);
                 int max = std::stoi(match[2]);
 
-                ret.rules[name].emplace_back(Rule{min, max});
+                rule.ranges.push_back(std::vector<int>{min, max});
                 line = match.suffix();
             }
+
+            ret.rules.push_back(rule);
             break;
         }
         case State::kYourTicket: {
@@ -245,12 +235,21 @@ nearby tickets:
 
     auto ticket = ParseInput(input);
     assert(ticket.rules.size() == 3);
-    assert((ticket.rules["class"][0] == Rule{1, 3}));
-    assert((ticket.rules["class"][1] == Rule{5, 7}));
-    assert((ticket.rules["row"][0] == Rule{6, 11}));
-    assert((ticket.rules["row"][1] == Rule{33, 44}));
-    assert((ticket.rules["seat"][0] == Rule{13, 40}));
-    assert((ticket.rules["seat"][1] == Rule{45, 50}));
+    assert(ticket.rules[0].name == "class");
+    assert(ticket.rules[0].ranges[0][0] == 1);
+    assert(ticket.rules[0].ranges[0][1] == 3);
+    assert(ticket.rules[0].ranges[1][0] == 5);
+    assert(ticket.rules[0].ranges[1][1] == 7);
+    assert(ticket.rules[1].name == "row");
+    assert(ticket.rules[1].ranges[0][0] == 6);
+    assert(ticket.rules[1].ranges[0][1] == 11);
+    assert(ticket.rules[1].ranges[1][0] == 33);
+    assert(ticket.rules[1].ranges[1][1] == 44);
+    assert(ticket.rules[2].name == "seat");
+    assert(ticket.rules[2].ranges[0][0] == 13);
+    assert(ticket.rules[2].ranges[0][1] == 40);
+    assert(ticket.rules[2].ranges[1][0] == 45);
+    assert(ticket.rules[2].ranges[1][1] == 50);
 
     assert((ticket.my_ticket.numbers == std::vector<int>{7, 1, 14}));
 
