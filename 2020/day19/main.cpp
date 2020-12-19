@@ -13,36 +13,8 @@ struct Rule {
     std::string str;
     int id;
 
-    std::vector<std::string> Apply(const std::map<int, Rule> &all_rules, const std::string &message) const {
-        if (!str.empty()) {
-            return std::vector<std::string>{str};
-        }
-
-        std::vector<std::string> ret;
-        for (const auto &rule : rules) {
-            std::vector<std::string> candidates{""};
-            for (int rule_index : rule) {
-                const auto tmp = all_rules.at(rule_index).Apply(all_rules, message);
-                std::vector<std::string> a;
-                for (const auto &c : candidates) {
-                    for (const auto &t : tmp) {
-                        a.push_back(c + t);
-                    }
-                }
-
-                candidates = std::move(a);
-            }
-
-            for (const auto &c : candidates) {
-                ret.push_back(c);
-            }
-        }
-
-        return ret;
-    }
-
-    std::vector<std::string> Apply02(const std::map<int, Rule> &all_rules, const std::string &message,
-                                     const std::vector<std::string> &prefixes) const {
+    std::vector<std::string> Apply(const std::map<int, Rule> &all_rules, const std::string &message,
+                                   const std::vector<std::string> &prefixes) const {
         if (!str.empty()) {
             return std::vector<std::string>{str};
         }
@@ -73,7 +45,7 @@ struct Rule {
                     }
                 }
 
-                const auto tmp = all_rules.at(rule_index).Apply02(all_rules, message, new_prefixes);
+                const auto tmp = all_rules.at(rule_index).Apply(all_rules, message, new_prefixes);
                 if (tmp.empty()) {
                     candidates.clear();
                     break;
@@ -191,19 +163,7 @@ std::tuple<std::map<int, Rule>, std::vector<std::string>> ParseInput(T &input_st
 }
 
 bool Check(int init_rule, const std::map<int, Rule> &rules, const std::string &message) {
-    const auto candidates = rules.at(init_rule).Apply(rules, message);
-
-    for (const auto &candidate : candidates) {
-        if (message == candidate) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool Check02(int init_rule, const std::map<int, Rule> &rules, const std::string &message) {
-    const auto candidates = rules.at(init_rule).Apply02(rules, message, std::vector<std::string>{""});
+    const auto candidates = rules.at(init_rule).Apply(rules, message, std::vector<std::string>{""});
 
     for (const auto &candidate : candidates) {
         if (message == candidate) {
@@ -228,7 +188,7 @@ int Solve01(const std::map<int, Rule> &rules, const std::vector<std::string> &me
 int Solve02(const std::map<int, Rule> &rules, const std::vector<std::string> &messages) {
     int ret = 0;
     for (const auto &message : messages) {
-        if (Check02(0, rules, message)) {
+        if (Check(0, rules, message)) {
             ++ret;
         }
     }
@@ -342,8 +302,8 @@ int main() {
     Test02();
 
     auto [rules, messages] = ParseInput(std::cin);
-    UpdateRules02(rules);
     std::cout << "Part01: " << Solve01(rules, messages) << std::endl;
+    UpdateRules02(rules);
     std::cout << "Part02: " << Solve02(rules, messages) << std::endl;
     return 0;
 }
