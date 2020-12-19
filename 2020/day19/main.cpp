@@ -5,6 +5,7 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <algorithm>
 
 namespace {
 
@@ -161,33 +162,11 @@ std::tuple<std::map<int, Rule>, std::vector<std::string>> ParseInput(T &input_st
     return std::make_tuple(rules, messages);
 }
 
-bool Check(int init_rule, const std::map<int, Rule> &rules, const std::string &message) {
-    const auto candidates = rules.at(init_rule).Apply(rules, message);
-
-    for (const auto &candidate : candidates) {
-        if (message == candidate) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-int Solve01(const std::map<int, Rule> &rules, const std::vector<std::string> &messages) {
+int Solve(const std::map<int, Rule> &rules, const std::vector<std::string> &messages) {
     int ret = 0;
     for (const auto &message : messages) {
-        if (Check(0, rules, message)) {
-            ++ret;
-        }
-    }
-
-    return ret;
-}
-
-int Solve02(const std::map<int, Rule> &rules, const std::vector<std::string> &messages) {
-    int ret = 0;
-    for (const auto &message : messages) {
-        if (Check(0, rules, message)) {
+        const auto candidates = rules.at(0).Apply(rules, message);
+        if (std::find(candidates.begin(), candidates.end(), message) != candidates.end()) {
             ++ret;
         }
     }
@@ -232,7 +211,7 @@ aaaabbb)");
     assert(messages[3] == "aaabbb");
     assert(messages[4] == "aaaabbb");
 
-    assert(Solve01(rules, messages) == 2);
+    assert(Solve(rules, messages) == 2);
 }
 
 void Test02() {
@@ -291,7 +270,7 @@ aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba)");
     assert((rules[8].rules == std::vector<std::vector<int>>{{42}, {42, 8}}));
     assert((rules[11].rules == std::vector<std::vector<int>>{{42, 31}, {42, 11, 31}}));
 
-    assert(Solve02(rules, messages) == 12);
+    assert(Solve(rules, messages) == 12);
 }
 
 } // namespace
@@ -301,9 +280,9 @@ int main() {
     Test02();
 
     auto [rules, messages] = ParseInput(std::cin);
-    std::cout << "Part01: " << Solve01(rules, messages) << std::endl;
+    std::cout << "Part01: " << Solve(rules, messages) << std::endl;
 
     UpdateRules02(rules);
-    std::cout << "Part02: " << Solve02(rules, messages) << std::endl;
+    std::cout << "Part02: " << Solve(rules, messages) << std::endl;
     return 0;
 }
