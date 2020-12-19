@@ -150,10 +150,10 @@ std::tuple<std::map<int, Rule>, std::vector<std::string>> ParseInput(T &input_st
     return std::make_tuple(rules, messages);
 }
 
-int Solve(const std::map<int, Rule> &rules, const std::vector<std::string> &messages) {
+int Solve(const std::map<int, Rule> &rules, const std::vector<std::string> &messages, int first_rule) {
     int ret = 0;
     for (const auto &message : messages) {
-        const auto candidates = rules.at(0).Apply(rules, message);
+        const auto candidates = rules.at(first_rule).Apply(rules, message);
         if (std::find(candidates.begin(), candidates.end(), message) != candidates.end()) {
             ++ret;
         }
@@ -199,7 +199,7 @@ aaaabbb)");
     assert(messages[3] == "aaabbb");
     assert(messages[4] == "aaaabbb");
 
-    assert(Solve(rules, messages) == 2);
+    assert(Solve(rules, messages, 0) == 2);
 }
 
 void Test02() {
@@ -258,7 +258,7 @@ aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba)");
     assert((rules[8].rules == std::vector<std::vector<int>>{{42}, {42, 8}}));
     assert((rules[11].rules == std::vector<std::vector<int>>{{42, 31}, {42, 11, 31}}));
 
-    assert(Solve(rules, messages) == 12);
+    assert(Solve(rules, messages, 0) == 12);
 }
 
 } // namespace
@@ -268,9 +268,9 @@ int main() {
     Test02();
 
     auto [rules, messages] = ParseInput(std::cin);
-    std::cout << "Part01: " << Solve(rules, messages) << std::endl;
+    std::cout << "Part01: " << Solve(rules, messages, 0) << std::endl;
 
     UpdateRules02(rules);
-    std::cout << "Part02: " << Solve(rules, messages) << std::endl;
+    std::cout << "Part02: " << Solve(rules, messages, 0) << std::endl;
     return 0;
 }
