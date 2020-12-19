@@ -16,20 +16,8 @@ struct Rule {
 
     std::vector<std::string> Apply(const std::map<int, Rule> &all_rules, const std::string &message,
                                    const std::vector<std::string> &prefixes = std::vector<std::string>{""}) const {
-        if (!str.empty()) {
+        if (!str.empty()) { // terminal symbol
             return std::vector<std::string>{str};
-        }
-
-        bool found = false;
-        for (const auto &prefix : prefixes) {
-            if (prefix.size() < message.size()) {
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            return std::vector<std::string>{};
         }
 
         std::vector<std::string> ret;
@@ -38,27 +26,26 @@ struct Rule {
             for (int rule_index : rule) {
                 std::vector<std::string> new_prefixes;
                 for (const auto &prefix : prefixes) {
-                    for (const auto &candidate : candidates) {
-                        auto tmp = prefix + candidate;
-                        if (message.find(tmp) == 0) {
-                            new_prefixes.emplace_back(std::move(tmp));
+                    for (const auto &cand : candidates) {
+                        auto new_prefix = prefix + cand;
+                        if (message.find(new_prefix) == 0) {
+                            new_prefixes.emplace_back(std::move(new_prefix));
                         }
                     }
                 }
 
-                const auto tmp = all_rules.at(rule_index).Apply(all_rules, message, new_prefixes);
-                if (tmp.empty()) {
-                    candidates.clear();
-                    break;
+                const auto strs = all_rules.at(rule_index).Apply(all_rules, message, new_prefixes);
+                if (strs.empty()) {
+                    goto next_rule;
                 }
 
                 std::vector<std::string> new_candidates;
                 for (const auto &candidate : candidates) {
-                    for (const auto &t : tmp) {
-                        auto new_candidate = candidate + t;
+                    for (const auto &s : strs) {
+                        auto new_candidate = candidate + s;
                         for (const auto &prefix : prefixes) {
                             if (message.find(prefix + new_candidate) == 0) {
-                                new_candidates.emplace_back(new_candidate);
+                                new_candidates.emplace_back(std::move(new_candidate));
                                 break;
                             }
                         }
@@ -66,8 +53,7 @@ struct Rule {
                 }
 
                 if (new_candidates.empty()) {
-                    candidates.clear();
-                    break;
+                    goto next_rule;
                 }
 
                 candidates = std::move(new_candidates);
@@ -76,6 +62,8 @@ struct Rule {
             for (const auto &c : candidates) {
                 ret.push_back(c);
             }
+
+        next_rule:;
         }
 
         return ret;
