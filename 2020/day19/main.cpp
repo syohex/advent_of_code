@@ -14,7 +14,7 @@ struct Rule {
     int id;
 
     std::vector<std::string> Apply(const std::map<int, Rule> &all_rules, const std::string &message,
-                                   const std::vector<std::string> &prefixes) const {
+                                   const std::vector<std::string> &prefixes = std::vector<std::string>{""}) const {
         if (!str.empty()) {
             return std::vector<std::string>{str};
         }
@@ -51,26 +51,25 @@ struct Rule {
                     break;
                 }
 
-                std::vector<std::string> a;
-                for (const auto &c : candidates) {
+                std::vector<std::string> new_candidates;
+                for (const auto &candidate : candidates) {
                     for (const auto &t : tmp) {
-                        auto new_candidate = c + t;
+                        auto new_candidate = candidate + t;
                         for (const auto &prefix : prefixes) {
-                            auto tt = prefix + new_candidate;
-                            if (message.find(tt) == 0) {
-                                a.emplace_back(new_candidate);
+                            if (message.find(prefix + new_candidate) == 0) {
+                                new_candidates.emplace_back(new_candidate);
                                 break;
                             }
                         }
                     }
                 }
 
-                if (a.empty()) {
+                if (new_candidates.empty()) {
                     candidates.clear();
                     break;
                 }
 
-                candidates = std::move(a);
+                candidates = std::move(new_candidates);
             }
 
             for (const auto &c : candidates) {
@@ -163,7 +162,7 @@ std::tuple<std::map<int, Rule>, std::vector<std::string>> ParseInput(T &input_st
 }
 
 bool Check(int init_rule, const std::map<int, Rule> &rules, const std::string &message) {
-    const auto candidates = rules.at(init_rule).Apply(rules, message, std::vector<std::string>{""});
+    const auto candidates = rules.at(init_rule).Apply(rules, message);
 
     for (const auto &candidate : candidates) {
         if (message == candidate) {
@@ -303,6 +302,7 @@ int main() {
 
     auto [rules, messages] = ParseInput(std::cin);
     std::cout << "Part01: " << Solve01(rules, messages) << std::endl;
+
     UpdateRules02(rules);
     std::cout << "Part02: " << Solve02(rules, messages) << std::endl;
     return 0;
