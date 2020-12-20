@@ -7,32 +7,38 @@
 #include <algorithm>
 #include <functional>
 #include <cmath>
+#include <map>
 
 namespace {
 
-enum class PlaceType {
-    kNormal,
-    kVerticalFlip,
-    kHorizontalFlip,
-    kRotate90,
-    kRotate180,
-    kRotate270,
+enum class RotateType {
+    kNone,
+    k90,
+    k180,
+    k270,
+};
+
+enum class FlipType {
+    kNone,
+    kVertical,
+    kHorizontal,
+    kBoth,
 };
 
 struct Image {
     std::int64_t id = -1;
     std::vector<std::string> tiles;
 
-    std::vector<std::string> Flip(bool vertical) const {
+    static std::vector<std::string> Flip1(const std::vector<std::string>& data, bool vertical) {
         std::vector<std::string> ret;
         if (vertical) {
-            for (const auto &tile : tiles) {
+            for (const auto &tile : data) {
                 std::string line = tile;
                 std::reverse(line.begin(), line.end());
                 ret.push_back(line);
             }
         } else {
-            for (auto it = tiles.rbegin(); it != tiles.rend(); ++it) {
+            for (auto it = data.rbegin(); it != data.rend(); ++it) {
                 std::string line = *it;
                 ret.push_back(line);
             }
@@ -41,24 +47,26 @@ struct Image {
         return ret;
     }
 
-    std::vector<std::string> Rotate(int degree) const {
-        assert(degree % 90 == 0 && degree < 360);
+    std::vector<std::string> Flip(bool vertical) const {
+        return Flip1(tiles, vertical);
+    }
 
+    static std::vector<std::string> Rotate1(const std::vector<std::string>& data, int degree) {
         std::vector<std::string> ret;
         int count = degree / 90;
         switch (count) {
         case 1: {
-            ret = tiles;
-            for (size_t i = 0; i < tiles.size(); ++i) {
-                size_t row_limit = tiles.size();
+            ret = data;
+            for (size_t i = 0; i < data.size(); ++i) {
+                size_t row_limit = data.size();
                 for (size_t j = 0; j < row_limit; ++j) {
-                    ret[i][j] = tiles[row_limit - 1 - j][i];
+                    ret[i][j] = data[row_limit - 1 - j][i];
                 }
             }
             break;
         }
         case 2: {
-            for (auto it = tiles.rbegin(); it != tiles.rend(); ++it) {
+            for (auto it = data.rbegin(); it != data.rend(); ++it) {
                 std::string line = *it;
                 std::reverse(line.begin(), line.end());
                 ret.push_back(line);
@@ -66,34 +74,53 @@ struct Image {
             break;
         }
         case 3: {
-            ret = tiles;
-            for (size_t i = 0; i < tiles.size(); ++i) {
-                size_t col_limit = tiles[i].size();
+            ret = data;
+            for (size_t i = 0; i < data.size(); ++i) {
+                size_t col_limit = data[i].size();
                 for (size_t j = 0; j < col_limit; ++j) {
-                    ret[i][j] = tiles[j][col_limit - 1 - i];
+                    ret[i][j] = data[j][col_limit - 1 - i];
                 }
             }
             break;
         }
+        default:
+            assert(!"never reach here");
+            break;
         }
 
         return ret;
+
     }
 
-    std::vector<std::string> Transform(PlaceType type) const {
-        switch (type) {
-        case PlaceType::kNormal:
-            return tiles;
-        case PlaceType::kVerticalFlip:
-            return Flip(true);
-        case PlaceType::kHorizontalFlip:
-            return Flip(false);
-        case PlaceType::kRotate90:
-            return Rotate(90);
-        case PlaceType::kRotate180:
-            return Rotate(180);
-        case PlaceType::kRotate270:
-            return Rotate(270);
+    std::vector<std::string> Rotate(int degree) const {
+        assert(degree % 90 == 0 && degree < 360);
+        return Rotate1(tiles, degree);
+    }
+
+    std::vector<std::string> Transform(FlipType flip_type, RotateType rotate_type) const {
+        auto data = tiles;
+        switch (flip_type) {
+        case FlipType::kNone:
+            break;
+        case FlipType::kVertical:
+            data = Flip1(data, true);
+            break;
+        case FlipType::kHorizontal:
+            data = Flip1(data, false);
+        case FlipType::kBoth:
+            data = Flip1(Flip1(data, false), true);
+            break;
+        }
+
+        switch (rotate_type) {
+        case RotateType::kNone:
+            return data;
+        case RotateType::k90:
+            return Rotate1(data, 90);
+        case RotateType::k180:
+            return Rotate1(data, 180);
+        case RotateType::k270:
+            return Rotate1(data, 270);
         }
 
         assert(!"never reach here");
@@ -132,7 +159,6 @@ std::vector<Image> ParseInput(T &input_stream) {
 struct Info {
     std::int64_t id;
     std::vector<std::string> data;
-    PlaceType place_type;
 };
 
 bool CanPut(const std::vector<Info> &infos, const std::vector<std::string> &data, size_t size, size_t pos) {
@@ -165,6 +191,7 @@ std::int64_t Solve01(const std::vector<Image> &images) {
     std::vector<Info> answer;
     std::function<bool(size_t pos, const std::vector<Info> &acc)> f;
     f = [&f, row_size, &images, &answer](size_t pos, const std::vector<Info> &acc) -> bool {
+        printf("@@ acc=%zd\n", acc.size());
         if (pos == images.size()) {
             answer = acc;
             return true;
@@ -183,15 +210,15 @@ std::int64_t Solve01(const std::vector<Image> &images) {
                 continue;
             }
 
-            PlaceType types[] = {PlaceType::kNormal,   PlaceType::kVerticalFlip, PlaceType::kHorizontalFlip,
-                                 PlaceType::kRotate90, PlaceType::kRotate180,    PlaceType::kRotate270};
-            for (const auto type : types) {
-                auto transformed_data = image.Transform(type);
-                if (CanPut(acc, transformed_data, row_size, pos)) {
-                    auto tmp = acc;
-                    tmp.emplace_back(Info{image.id, transformed_data, type});
-                    if (f(pos + 1, tmp)) {
-                        return true;
+            for (const auto flip_type : {FlipType::kNone, FlipType::kVertical, FlipType::kHorizontal, FlipType::kBoth}) {
+                for (const auto rotate_type : {RotateType::kNone, RotateType::k90, RotateType::k180, RotateType::k270}) {
+                    auto transformed_data = image.Transform(flip_type, rotate_type);
+                    if (CanPut(acc, transformed_data, row_size, pos)) {
+                        auto tmp = acc;
+                        tmp.emplace_back(Info{image.id, transformed_data});
+                        if (f(pos + 1, tmp)) {
+                            return true;
+                        }
                     }
                 }
             }
