@@ -3,12 +3,35 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <algorithm>
 
 namespace {
 
 struct Image {
     std::int64_t id = -1;
     std::vector<std::string> tiles;
+
+    std::vector<std::string> Flip() const {
+        std::vector<std::string> ret;
+        for (const auto &tile : tiles) {
+            std::string line = tile;
+            std::reverse(line.begin(), line.end());
+            ret.push_back(line);
+        }
+
+        return ret;
+    }
+
+    std::vector<std::string> Rotate() const {
+        std::vector<std::string> ret;
+        for (auto it = tiles.rbegin(); it != tiles.rend(); ++it) {
+            std::string line = *it;
+            std::reverse(line.begin(), line.end());
+            ret.push_back(line);
+        }
+
+        return ret;
+    }
 };
 
 template <typename T>
@@ -156,6 +179,32 @@ Tile 3079:
     assert(images[6].id == 2971);
     assert(images[7].id == 2729);
     assert(images[8].id == 3079);
+
+    {
+        // clang-format off
+        std::vector<std::string> data {
+            "#..",
+            "##.",
+            "..#",
+            "#.#",
+        };
+        std::vector<std::string> flipped {
+            "..#",
+            ".##",
+            "#..",
+            "#.#",
+        };
+        std::vector<std::string> rotated {
+            "#.#",
+            "#..",
+            ".##",
+            "..#",
+        };
+        // clang-format on
+        Image image{1, data};
+        assert(image.Flip() == flipped);
+        assert(image.Rotate() == rotated);
+    }
 }
 
 } // namespace
