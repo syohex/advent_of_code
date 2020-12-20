@@ -196,10 +196,7 @@ bool CanPut(const std::vector<Info> &infos, const std::vector<std::string> &data
     return true;
 }
 
-std::int64_t Solve01(const std::map<std::int64_t, Image> &images) {
-    size_t limit = images.size();
-    size_t row_size = static_cast<size_t>(std::sqrt(limit));
-
+std::vector<Info> FindCorrectImage(const std::map<std::int64_t, Image> &images, size_t row_size) {
     std::vector<Info> answer;
     std::function<bool(size_t pos, const std::vector<Info> &acc)> f;
     f = [&f, row_size, &images, &answer](size_t pos, const std::vector<Info> &acc) -> bool {
@@ -239,10 +236,89 @@ std::int64_t Solve01(const std::map<std::int64_t, Image> &images) {
     auto found = f(0, std::vector<Info>{});
     assert(found);
 
+    return answer;
+}
+
+std::int64_t Solve01(const std::map<std::int64_t, Image> &images) {
+    size_t row_size = static_cast<size_t>(std::sqrt(images.size()));
+    auto answer = FindCorrectImage(images, row_size);
+
     size_t right_up = row_size - 1;
     size_t left_down = row_size * row_size - row_size;
     size_t right_down = row_size * row_size - 1;
     return answer[0].id * answer[right_up].id * answer[left_down].id * answer[right_down].id;
+}
+
+int CountHash(const std::vector<std::string> &data) {
+    int ret = 0;
+    for (const auto &str : data) {
+        for (const char c : str) {
+            if (c == '#') {
+                ++ret;
+            }
+        }
+    }
+
+    return ret;
+}
+
+std::int64_t Solve02(const std::vector<std::string> &full_image, const std::vector<std::string> &monster) {
+    Image image(-1, full_image);
+
+    for (const auto &candidate : image.candidates) {
+        size_t x_limit = candidate.size() - monster.size();
+        size_t y_limit = candidate[0].size() - monster[0].size();
+
+        int count = 0;
+        for (size_t i = 0; i < x_limit; ++i) {
+            for (size_t j = 0; j < y_limit; ++j) {
+                bool found = true;
+                for (size_t m = 0; m < monster.size(); ++m) {
+                    for (size_t n = 0; n < monster[m].size(); ++n) {
+                        if (monster[m][n] != '#') {
+                            continue;
+                        }
+
+                        if (candidate[i + m][j + n] != monster[m][n]) {
+                            found = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    ++count;
+                }
+            }
+        }
+
+        if (count != 0) {
+            return CountHash(candidate) - (count * CountHash(monster));
+        }
+    }
+
+    assert(!"never reach here");
+    return -1;
+}
+
+std::vector<std::string> RemoveBorder(const std::vector<Info> &images, size_t size) {
+    std::vector<std::string> ret;
+    size_t image_size = images[0].data.size();
+    for (size_t z = 0; z < size; ++z) {
+        for (size_t i = 1; i < image_size - 1; ++i) {
+            std::string line;
+            for (size_t j = 0; j < size; ++j) {
+                size_t idx = (z * size) + j;
+                const Info &info = images[idx];
+                const std::string str = info.data[i].substr(1, image_size - 2);
+                line.append(str);
+            }
+
+            ret.push_back(line);
+        }
+    }
+
+    return ret;
 }
 
 void Test01() {
@@ -419,6 +495,20 @@ Tile 3079:
     }
 
     assert(Solve01(images) == 20899048083289);
+
+    auto correct_image = FindCorrectImage(images, 3);
+    auto full_image = RemoveBorder(correct_image, 3);
+    assert(full_image.size() == 24 && full_image[0].size() == 24);
+
+    // clang-format off
+    std::vector<std::string> monster {
+        "                  # ",
+        "#    ##    ##    ###",
+        " #  #  #  #  #  #   ",
+    };
+    // clang-format on
+
+    assert(Solve02(full_image, monster) == 273);
 }
 
 } // namespace
@@ -426,7 +516,20 @@ Tile 3079:
 int main() {
     Test01();
 
+    // clang-format off
+    std::vector<std::string> monster {
+        "                  # ",
+        "#    ##    ##    ###",
+        " #  #  #  #  #  #   ",
+    };
+    // clang-format on
+
     auto images = ParseInput(std::cin);
-    std::cout << Solve01(images) << std::endl;
+    std::cout << "Part01:" << Solve01(images) << std::endl;
+
+    auto correct_image = FindCorrectImage(images, 12);
+    auto full_image = RemoveBorder(correct_image, 12);
+
+    std::cout << "Part02:" << Solve02(full_image, monster) << std::endl;
     return 0;
 }
