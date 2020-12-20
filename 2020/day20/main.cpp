@@ -4,30 +4,76 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <functional>
+#include <cmath>
 
 namespace {
+
+enum class Type {
+    kNormal,
+    kVerticalFlipped,
+    kHorizonalFlipped,
+    kRotated,
+};
 
 struct Image {
     std::int64_t id = -1;
     std::vector<std::string> tiles;
 
-    std::vector<std::string> Flip() const {
+    std::vector<std::string> Flip(Type type) const {
+        assert(type == Type::kVerticalFlipped || type == Type::kHorizonalFlipped);
+
         std::vector<std::string> ret;
-        for (const auto &tile : tiles) {
-            std::string line = tile;
-            std::reverse(line.begin(), line.end());
-            ret.push_back(line);
+        if (type == Type::kVerticalFlipped) {
+            for (const auto &tile : tiles) {
+                std::string line = tile;
+                std::reverse(line.begin(), line.end());
+                ret.push_back(line);
+            }
+        } else {
+            for (auto it = tiles.rbegin(); it != tiles.rend(); ++it) {
+                std::string line = *it;
+                ret.push_back(line);
+            }
         }
 
         return ret;
     }
 
-    std::vector<std::string> Rotate() const {
+    std::vector<std::string> Rotate(int degree) const {
+        assert(degree % 90 == 0 && degree < 360);
+
         std::vector<std::string> ret;
-        for (auto it = tiles.rbegin(); it != tiles.rend(); ++it) {
-            std::string line = *it;
-            std::reverse(line.begin(), line.end());
-            ret.push_back(line);
+        int count = degree / 90;
+        switch (count) {
+        case 1: {
+            ret = tiles;
+            for (size_t i = 0; i < tiles.size(); ++i) {
+                size_t row_limit = tiles.size();
+                for (size_t j = 0; j < row_limit; ++j) {
+                    ret[i][j] = tiles[row_limit - 1 - j][i];
+                }
+            }
+            break;
+        }
+        case 2: {
+            for (auto it = tiles.rbegin(); it != tiles.rend(); ++it) {
+                std::string line = *it;
+                std::reverse(line.begin(), line.end());
+                ret.push_back(line);
+            }
+            break;
+        }
+        case 3: {
+            ret = tiles;
+            for (size_t i = 0; i < tiles.size(); ++i) {
+                size_t col_limit = tiles[i].size();
+                for (size_t j = 0; j < col_limit; ++j) {
+                    ret[i][j] = tiles[j][col_limit - 1 - i];
+                }
+            }
+            break;
+        }
         }
 
         return ret;
@@ -56,6 +102,10 @@ std::vector<Image> ParseInput(T &input_stream) {
 
     ret.push_back(image);
     return ret;
+}
+
+std::int64_t Solve01(const std::vector<Image> &images) {
+    return 0;
 }
 
 void Test01() {
@@ -186,24 +236,41 @@ Tile 3079:
             "#..",
             "##.",
             "..#",
-            "#.#",
         };
-        std::vector<std::string> flipped {
+        std::vector<std::string> vertical_flipped {
             "..#",
             ".##",
             "#..",
-            "#.#",
         };
-        std::vector<std::string> rotated {
-            "#.#",
+        std::vector<std::string> horizontal_flipped {
+            "..#",
+            "##.",
+            "#..",
+        };
+        std::vector<std::string> rotated90 {
+            ".##",
+            ".#.",
+            "#..",
+        };
+        std::vector<std::string> rotated180 {
             "#..",
             ".##",
             "..#",
+        };
+        std::vector<std::string> rotated270 {
+            "..#",
+            ".#.",
+            "##.",
         };
         // clang-format on
+
         Image image{1, data};
-        assert(image.Flip() == flipped);
-        assert(image.Rotate() == rotated);
+        assert(image.Flip(Type::kVerticalFlipped) == vertical_flipped);
+        assert(image.Flip(Type::kHorizonalFlipped) == horizontal_flipped);
+
+        assert(image.Rotate(90) == rotated90);
+        assert(image.Rotate(180) == rotated180);
+        assert(image.Rotate(270) == rotated270);
     }
 }
 
