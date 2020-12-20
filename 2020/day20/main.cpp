@@ -1,4 +1,5 @@
 #include <cassert>
+#include <iostream>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -9,22 +10,22 @@
 
 namespace {
 
-enum class Type {
+enum class PlaceType {
     kNormal,
-    kVerticalFlipped,
-    kHorizonalFlipped,
-    kRotated,
+    kVerticalFlip,
+    kHorizontalFlip,
+    kRotate90,
+    kRotate180,
+    kRotate270,
 };
 
 struct Image {
     std::int64_t id = -1;
     std::vector<std::string> tiles;
 
-    std::vector<std::string> Flip(Type type) const {
-        assert(type == Type::kVerticalFlipped || type == Type::kHorizonalFlipped);
-
+    std::vector<std::string> Flip(bool vertical) const {
         std::vector<std::string> ret;
-        if (type == Type::kVerticalFlipped) {
+        if (vertical) {
             for (const auto &tile : tiles) {
                 std::string line = tile;
                 std::reverse(line.begin(), line.end());
@@ -78,6 +79,26 @@ struct Image {
 
         return ret;
     }
+
+    std::vector<std::string> Transform(PlaceType type) const {
+        switch (type) {
+        case PlaceType::kNormal:
+            return tiles;
+        case PlaceType::kVerticalFlip:
+            return Flip(true);
+        case PlaceType::kHorizontalFlip:
+            return Flip(false);
+        case PlaceType::kRotate90:
+            return Rotate(90);
+        case PlaceType::kRotate180:
+            return Rotate(180);
+        case PlaceType::kRotate270:
+            return Rotate(270);
+        }
+
+        assert(!"never reach here");
+        return std::vector<std::string>{};
+    }
 };
 
 template <typename T>
@@ -94,18 +115,98 @@ std::vector<Image> ParseInput(T &input_stream) {
         } else if (line.empty()) {
             assert(image.id != -1 && !image.tiles.empty());
             ret.push_back(image);
+            image.tiles.clear();
             continue;
         } else {
             image.tiles.push_back(line);
         }
     }
 
-    ret.push_back(image);
+    if (!image.tiles.empty()) {
+        ret.push_back(image);
+    }
+
     return ret;
 }
 
+struct Info {
+    std::int64_t id;
+    std::vector<std::string> data;
+    PlaceType place_type;
+};
+
+bool CanPut(const std::vector<Info> &infos, const std::vector<std::string> &data, size_t size, size_t pos) {
+    int row = pos / size;
+    int col = pos % size;
+
+    if (row - 1 >= 0) {
+        auto &info = infos[pos - size];
+        if (info.data.back() != data.front()) {
+            return false;
+        }
+    }
+
+    if (col - 1 >= 0) {
+        auto &info = infos[pos - 1];
+        for (size_t i = 0; i < data.size(); ++i) {
+            if (info.data[i].back() != data[i].front()) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 std::int64_t Solve01(const std::vector<Image> &images) {
-    return 0;
+    size_t limit = images.size();
+    size_t row_size = static_cast<size_t>(std::sqrt(limit));
+
+    std::vector<Info> answer;
+    std::function<bool(size_t pos, const std::vector<Info> &acc)> f;
+    f = [&f, row_size, &images, &answer](size_t pos, const std::vector<Info> &acc) -> bool {
+        if (pos == images.size()) {
+            answer = acc;
+            return true;
+        }
+
+        for (const auto &image : images) {
+            bool already_used = false;
+            for (const auto &info : acc) {
+                if (image.id == info.id) {
+                    already_used = true;
+                    break;
+                }
+            }
+
+            if (already_used) {
+                continue;
+            }
+
+            PlaceType types[] = {PlaceType::kNormal,   PlaceType::kVerticalFlip, PlaceType::kHorizontalFlip,
+                                 PlaceType::kRotate90, PlaceType::kRotate180,    PlaceType::kRotate270};
+            for (const auto type : types) {
+                auto transformed_data = image.Transform(type);
+                if (CanPut(acc, transformed_data, row_size, pos)) {
+                    auto tmp = acc;
+                    tmp.emplace_back(Info{image.id, transformed_data, type});
+                    if (f(pos + 1, tmp)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    };
+
+    auto found = f(0, std::vector<Info>{});
+    assert(found);
+
+    size_t right_up = row_size - 1;
+    size_t left_down = row_size * row_size - row_size;
+    size_t right_down = row_size * row_size - 1;
+    return answer[0].id * answer[right_up].id * answer[left_down].id * answer[right_down].id;
 }
 
 void Test01() {
@@ -230,6 +331,13 @@ Tile 3079:
     assert(images[7].id == 2729);
     assert(images[8].id == 3079);
 
+    for (const auto &image : images) {
+        assert(image.tiles.size() == 10);
+        for (size_t i = 0; i < image.tiles.size(); ++i) {
+            assert(image.tiles[i].size() == 10);
+        }
+    }
+
     {
         // clang-format off
         std::vector<std::string> data {
@@ -265,18 +373,23 @@ Tile 3079:
         // clang-format on
 
         Image image{1, data};
-        assert(image.Flip(Type::kVerticalFlipped) == vertical_flipped);
-        assert(image.Flip(Type::kHorizonalFlipped) == horizontal_flipped);
+        assert(image.Flip(true) == vertical_flipped);
+        assert(image.Flip(false) == horizontal_flipped);
 
         assert(image.Rotate(90) == rotated90);
         assert(image.Rotate(180) == rotated180);
         assert(image.Rotate(270) == rotated270);
     }
+
+    assert(Solve01(images) == 20899048083289);
 }
 
 } // namespace
 
 int main() {
     Test01();
+
+    auto images = ParseInput(std::cin);
+    std::cout << Solve01(images) << std::endl;
     return 0;
 }
