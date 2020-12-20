@@ -173,7 +173,7 @@ struct Info {
     std::vector<std::string> data;
 };
 
-bool CanPut(const std::vector<Info> &infos, const std::vector<std::string> &data, size_t size, size_t pos) {
+bool CanPlace(const std::vector<Info> &infos, const std::vector<std::string> &data, size_t size, size_t pos) {
     int row = pos / size;
     int col = pos % size;
 
@@ -198,30 +198,30 @@ bool CanPut(const std::vector<Info> &infos, const std::vector<std::string> &data
 
 std::vector<Info> FindValidImageOrder(const std::map<std::int64_t, Image> &images) {
     size_t size = static_cast<size_t>(std::sqrt(images.size()));
-    std::vector<Info> answer;
+    std::vector<Info> ret;
     std::function<bool(size_t pos, const std::vector<Info> &acc)> f;
-    f = [&f, size, &images, &answer](size_t pos, const std::vector<Info> &acc) -> bool {
+    f = [&f, size, &images, &ret](size_t pos, const std::vector<Info> &acc) -> bool {
         if (pos == images.size()) {
-            answer = acc;
+            ret = acc;
             return true;
         }
 
         for (const auto &it : images) {
             auto &image = it.second;
-            bool already_used = false;
+            bool used = false;
             for (const auto &info : acc) {
                 if (image.id == info.id) {
-                    already_used = true;
+                    used = true;
                     break;
                 }
             }
 
-            if (already_used) {
+            if (used) {
                 continue;
             }
 
             for (const auto &candidate : image.candidates) {
-                if (CanPut(acc, candidate, size, pos)) {
+                if (CanPlace(acc, candidate, size, pos)) {
                     auto tmp = acc;
                     tmp.emplace_back(Info{image.id, candidate});
                     if (f(pos + 1, tmp)) {
@@ -237,7 +237,7 @@ std::vector<Info> FindValidImageOrder(const std::map<std::int64_t, Image> &image
     auto found = f(0, std::vector<Info>{});
     assert(found);
 
-    return answer;
+    return ret;
 }
 
 std::int64_t Solve01(const std::vector<Info> &images) {
