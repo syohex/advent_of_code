@@ -196,10 +196,11 @@ bool CanPut(const std::vector<Info> &infos, const std::vector<std::string> &data
     return true;
 }
 
-std::vector<Info> FindCorrectImage(const std::map<std::int64_t, Image> &images, size_t row_size) {
+std::vector<Info> FindValidImageOrder(const std::map<std::int64_t, Image> &images) {
+    size_t size = static_cast<size_t>(std::sqrt(images.size()));
     std::vector<Info> answer;
     std::function<bool(size_t pos, const std::vector<Info> &acc)> f;
-    f = [&f, row_size, &images, &answer](size_t pos, const std::vector<Info> &acc) -> bool {
+    f = [&f, size, &images, &answer](size_t pos, const std::vector<Info> &acc) -> bool {
         if (pos == images.size()) {
             answer = acc;
             return true;
@@ -220,7 +221,7 @@ std::vector<Info> FindCorrectImage(const std::map<std::int64_t, Image> &images, 
             }
 
             for (const auto &candidate : image.candidates) {
-                if (CanPut(acc, candidate, row_size, pos)) {
+                if (CanPut(acc, candidate, size, pos)) {
                     auto tmp = acc;
                     tmp.emplace_back(Info{image.id, candidate});
                     if (f(pos + 1, tmp)) {
@@ -239,14 +240,12 @@ std::vector<Info> FindCorrectImage(const std::map<std::int64_t, Image> &images, 
     return answer;
 }
 
-std::int64_t Solve01(const std::map<std::int64_t, Image> &images) {
-    size_t row_size = static_cast<size_t>(std::sqrt(images.size()));
-    auto answer = FindCorrectImage(images, row_size);
-
-    size_t right_up = row_size - 1;
-    size_t left_down = row_size * row_size - row_size;
-    size_t right_down = row_size * row_size - 1;
-    return answer[0].id * answer[right_up].id * answer[left_down].id * answer[right_down].id;
+std::int64_t Solve01(const std::vector<Info> &images) {
+    size_t size = static_cast<size_t>(std::sqrt(images.size()));
+    size_t right_up = size - 1;
+    size_t left_down = size * size - size;
+    size_t right_down = size * size - 1;
+    return images[0].id * images[right_up].id * images[left_down].id * images[right_down].id;
 }
 
 int CountHash(const std::vector<std::string> &data) {
@@ -301,7 +300,8 @@ std::int64_t Solve02(const std::vector<std::string> &full_image, const std::vect
     return -1;
 }
 
-std::vector<std::string> RemoveBorder(const std::vector<Info> &images, size_t size) {
+std::vector<std::string> RemoveBorder(const std::vector<Info> &images) {
+    size_t size = static_cast<size_t>(std::sqrt(images.size()));
     std::vector<std::string> ret;
     size_t image_size = images[0].data.size();
     for (size_t z = 0; z < size; ++z) {
@@ -494,10 +494,10 @@ Tile 3079:
         assert(image.Rotate(270) == rotated270);
     }
 
-    assert(Solve01(images) == 20899048083289);
+    auto valid_order = FindValidImageOrder(images);
+    assert(Solve01(valid_order) == 20899048083289);
 
-    auto correct_image = FindCorrectImage(images, 3);
-    auto full_image = RemoveBorder(correct_image, 3);
+    auto full_image = RemoveBorder(valid_order);
     assert(full_image.size() == 24 && full_image[0].size() == 24);
 
     // clang-format off
@@ -525,11 +525,10 @@ int main() {
     // clang-format on
 
     auto images = ParseInput(std::cin);
-    std::cout << "Part01:" << Solve01(images) << std::endl;
+    auto valid_order = FindValidImageOrder(images);
+    std::cout << "Part01:" << Solve01(valid_order) << std::endl;
 
-    auto correct_image = FindCorrectImage(images, 12);
-    auto full_image = RemoveBorder(correct_image, 12);
-
+    auto full_image = RemoveBorder(valid_order);
     std::cout << "Part02:" << Solve02(full_image, monster) << std::endl;
     return 0;
 }
