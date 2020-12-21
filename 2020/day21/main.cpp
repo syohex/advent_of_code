@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <set>
+#include <algorithm>
 
 namespace {
 
@@ -59,7 +60,7 @@ std::vector<Food> ParseInput(T &input_stream) {
     return foods;
 }
 
-int Solve01(const std::vector<Food> &foods) {
+std::map<std::string, std::set<std::string>> DetermineFood(const std::vector<Food> &foods) {
     std::set<std::string> all_ingredients;
     std::set<std::string> all_allergens;
     for (const auto &food : foods) {
@@ -112,8 +113,14 @@ int Solve01(const std::vector<Food> &foods) {
         }
     }
 
+    return table;
+}
+
+int Solve01(const std::vector<Food> &foods) {
+    auto food_table = DetermineFood(foods);
+
     std::set<std::string> safes;
-    for (const auto &it : table) {
+    for (const auto &it : food_table) {
         if (it.second.empty()) {
             safes.insert(it.first);
         }
@@ -125,6 +132,31 @@ int Solve01(const std::vector<Food> &foods) {
             if (food.ingredients.find(safe) != food.ingredients.end()) {
                 ++ret;
             }
+        }
+    }
+
+    return ret;
+}
+
+std::string Solve02(const std::vector<Food> &foods) {
+    auto food_table = DetermineFood(foods);
+
+    std::vector<std::vector<std::string>> dangers;
+    for (const auto &it : food_table) {
+        if (!it.second.empty()) {
+            assert(it.second.size() == 1);
+            dangers.emplace_back(std::vector<std::string>{it.first, (*it.second.begin())});
+        }
+    }
+
+    std::sort(dangers.begin(), dangers.end(),
+              [](const std::vector<std::string> &a, const std::vector<std::string> &b) { return a[1] < b[1]; });
+
+    std::string ret;
+    for (size_t i = 0; i < dangers.size(); ++i) {
+        ret += dangers[i][0];
+        if (i != dangers.size() - 1) {
+            ret += ",";
         }
     }
 
@@ -162,6 +194,7 @@ sqjhc mxmxvkd sbzzf (contains fish))");
     }
 
     assert(Solve01(foods) == 5);
+    assert(Solve02(foods) == "mxmxvkd,sqjhc,fvjkl");
 }
 
 } // namespace
@@ -171,5 +204,6 @@ int main() {
 
     auto foods = ParseInput(std::cin);
     std::cout << "Part01:" << Solve01(foods) << std::endl;
+    std::cout << "Part02:" << Solve02(foods) << std::endl;
     return 0;
 }
