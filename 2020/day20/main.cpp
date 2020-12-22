@@ -139,6 +139,11 @@ struct Image {
     }
 };
 
+struct ImagePieceInfo {
+    std::int64_t id;
+    std::vector<std::string> data;
+};
+
 template <typename T>
 std::map<std::int64_t, Image> ParseInput(T &input_stream) {
     std::map<std::int64_t, Image> ret;
@@ -168,12 +173,7 @@ std::map<std::int64_t, Image> ParseInput(T &input_stream) {
     return ret;
 }
 
-struct Info {
-    std::int64_t id;
-    std::vector<std::string> data;
-};
-
-bool CanPlace(const std::vector<Info> &infos, const std::vector<std::string> &data, size_t size, size_t pos) {
+bool CanPlace(const std::vector<ImagePieceInfo> &infos, const std::vector<std::string> &data, size_t size, size_t pos) {
     int row = pos / size;
     int col = pos % size;
 
@@ -196,11 +196,11 @@ bool CanPlace(const std::vector<Info> &infos, const std::vector<std::string> &da
     return true;
 }
 
-std::vector<Info> FindValidImageOrder(const std::map<std::int64_t, Image> &images) {
+std::vector<ImagePieceInfo> FindValidImageOrder(const std::map<std::int64_t, Image> &images) {
     size_t size = static_cast<size_t>(std::sqrt(images.size()));
-    std::vector<Info> ret;
-    std::function<bool(size_t pos, const std::vector<Info> &acc)> f;
-    f = [&f, size, &images, &ret](size_t pos, const std::vector<Info> &acc) -> bool {
+    std::vector<ImagePieceInfo> ret;
+    std::function<bool(size_t pos, const std::vector<ImagePieceInfo> &acc)> f;
+    f = [&f, size, &images, &ret](size_t pos, const std::vector<ImagePieceInfo> &acc) -> bool {
         if (pos == images.size()) {
             ret = acc;
             return true;
@@ -223,7 +223,7 @@ std::vector<Info> FindValidImageOrder(const std::map<std::int64_t, Image> &image
             for (const auto &candidate : image.candidates) {
                 if (CanPlace(acc, candidate, size, pos)) {
                     auto tmp = acc;
-                    tmp.emplace_back(Info{image.id, candidate});
+                    tmp.emplace_back(ImagePieceInfo{image.id, candidate});
                     if (f(pos + 1, tmp)) {
                         return true;
                     }
@@ -234,13 +234,13 @@ std::vector<Info> FindValidImageOrder(const std::map<std::int64_t, Image> &image
         return false;
     };
 
-    auto found = f(0, std::vector<Info>{});
+    auto found = f(0, std::vector<ImagePieceInfo>{});
     assert(found);
 
     return ret;
 }
 
-std::int64_t Solve01(const std::vector<Info> &images) {
+std::int64_t Solve01(const std::vector<ImagePieceInfo> &images) {
     size_t size = static_cast<size_t>(std::sqrt(images.size()));
     size_t right_up = size - 1;
     size_t left_down = size * size - size;
@@ -248,7 +248,7 @@ std::int64_t Solve01(const std::vector<Info> &images) {
     return images[0].id * images[right_up].id * images[left_down].id * images[right_down].id;
 }
 
-int CountHash(const std::vector<std::string> &data) {
+int CountHashMark(const std::vector<std::string> &data) {
     int ret = 0;
     for (const auto &str : data) {
         for (const char c : str) {
@@ -292,7 +292,7 @@ std::int64_t Solve02(const std::vector<std::string> &full_image, const std::vect
         }
 
         if (count != 0) {
-            return CountHash(candidate) - (count * CountHash(monster));
+            return CountHashMark(candidate) - (count * CountHashMark(monster));
         }
     }
 
@@ -300,7 +300,7 @@ std::int64_t Solve02(const std::vector<std::string> &full_image, const std::vect
     return -1;
 }
 
-std::vector<std::string> RemoveBorder(const std::vector<Info> &images) {
+std::vector<std::string> RemoveBorder(const std::vector<ImagePieceInfo> &images) {
     size_t size = static_cast<size_t>(std::sqrt(images.size()));
     std::vector<std::string> ret;
     size_t image_size = images[0].data.size();
@@ -309,7 +309,7 @@ std::vector<std::string> RemoveBorder(const std::vector<Info> &images) {
             std::string line;
             for (size_t j = 0; j < size; ++j) {
                 size_t idx = (z * size) + j;
-                const Info &info = images[idx];
+                const ImagePieceInfo &info = images[idx];
                 const std::string str = info.data[i].substr(1, image_size - 2);
                 line.append(str);
             }
