@@ -304,11 +304,11 @@ std::vector<std::string> RemoveBorder(const std::vector<ImagePieceInfo> &images)
     size_t size = static_cast<size_t>(std::sqrt(images.size()));
     std::vector<std::string> ret;
     size_t image_size = images[0].data.size();
-    for (size_t z = 0; z < size; ++z) {
+    for (size_t row = 0; row < size; ++row) {
         for (size_t i = 1; i < image_size - 1; ++i) {
             std::string line;
             for (size_t j = 0; j < size; ++j) {
-                size_t idx = (z * size) + j;
+                size_t idx = (row * size) + j;
                 const ImagePieceInfo &info = images[idx];
                 const std::string str = info.data[i].substr(1, image_size - 2);
                 line.append(str);
