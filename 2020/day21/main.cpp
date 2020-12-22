@@ -60,7 +60,7 @@ std::vector<Food> ParseInput(T &input_stream) {
     return foods;
 }
 
-std::map<std::string, std::set<std::string>> DetermineFood(const std::vector<Food> &foods) {
+std::map<std::string, std::set<std::string>> DetermineAllergen(const std::vector<Food> &foods) {
     std::set<std::string> all_ingredients;
     std::set<std::string> all_allergens;
     for (const auto &food : foods) {
@@ -72,64 +72,69 @@ std::map<std::string, std::set<std::string>> DetermineFood(const std::vector<Foo
         }
     }
 
-    std::map<std::string, std::set<std::string>> table;
+    std::map<std::string, std::set<std::string>> ingredient_table;
     for (const auto &ingredient : all_ingredients) {
-        table[ingredient] = all_allergens;
+        ingredient_table[ingredient] = all_allergens;
     }
 
     while (true) {
-        for (auto &it : table) {
+        for (auto &it : ingredient_table) {
             auto &ingredient = it.first;
+            auto &allergens = it.second;
 
             for (const auto &food : foods) {
                 if (food.ingredients.find(ingredient) == food.ingredients.end()) {
                     for (const auto &allergen : food.allergens) {
-                        it.second.erase(allergen);
+                        allergens.erase(allergen);
                     }
                 }
             }
 
-            if (it.second.size() == 1) {
-                auto decided = (*it.second.begin());
-                for (auto &it2 : table) {
-                    if (it.first == it2.first) {
+            if (allergens.size() == 1) {
+                auto allergen = (*allergens.begin());
+                for (auto &it2 : ingredient_table) {
+                    if (ingredient == it2.first) { // ignore me
                         continue;
                     }
-                    it2.second.erase(decided);
+
+                    it2.second.erase(allergen);
                 }
             }
         }
 
-        bool ok = true;
-        for (const auto &it : table) {
-            if (it.second.size() >= 2) {
-                ok = false;
+        bool all_determined = true;
+        for (const auto &it : ingredient_table) {
+            const auto &allergens = it.second;
+            if (allergens.size() >= 2) {
+                all_determined = false;
                 break;
             }
         }
 
-        if (ok) {
+        if (all_determined) {
             break;
         }
     }
 
-    return table;
+    return ingredient_table;
 }
 
 int Solve01(const std::vector<Food> &foods) {
-    auto food_table = DetermineFood(foods);
+    auto ingredient_table = DetermineAllergen(foods);
 
-    std::set<std::string> safes;
-    for (const auto &it : food_table) {
-        if (it.second.empty()) {
-            safes.insert(it.first);
+    std::set<std::string> safe_ingredients;
+    for (const auto &it : ingredient_table) {
+        const auto &ingredient = it.first;
+        const auto &allergens = it.second;
+        if (allergens.empty()) {
+            safe_ingredients.insert(ingredient);
         }
     }
 
     int ret = 0;
-    for (const auto &safe : safes) {
+    for (const auto &ingredient : safe_ingredients) {
         for (const auto &food : foods) {
-            if (food.ingredients.find(safe) != food.ingredients.end()) {
+            if (food.ingredients.find(ingredient) != food.ingredients.end()) {
                 ++ret;
             }
         }
@@ -139,23 +144,32 @@ int Solve01(const std::vector<Food> &foods) {
 }
 
 std::string Solve02(const std::vector<Food> &foods) {
-    auto food_table = DetermineFood(foods);
+    auto ingredient_table = DetermineAllergen(foods);
 
-    std::vector<std::vector<std::string>> dangers;
-    for (const auto &it : food_table) {
-        if (!it.second.empty()) {
-            assert(it.second.size() == 1);
-            dangers.emplace_back(std::vector<std::string>{it.first, (*it.second.begin())});
+    struct Data {
+        std::string ingredient;
+        std::string allergen;
+    };
+
+    std::vector<Data> dangerous_ingredients;
+    for (const auto &it : ingredient_table) {
+        const auto &ingredient = it.first;
+        const auto &allergens = it.second;
+        if (!allergens.empty()) {
+            assert(allergens.size() == 1);
+            const auto &allergen = *(allergens.begin());
+            dangerous_ingredients.emplace_back(Data{ingredient, allergen});
         }
     }
 
-    std::sort(dangers.begin(), dangers.end(),
-              [](const std::vector<std::string> &a, const std::vector<std::string> &b) { return a[1] < b[1]; });
+    std::sort(dangerous_ingredients.begin(), dangerous_ingredients.end(),
+              [](const Data &a, const Data &b) { return a.allergen < b.allergen; });
 
     std::string ret;
-    for (size_t i = 0; i < dangers.size(); ++i) {
-        ret += dangers[i][0];
-        if (i != dangers.size() - 1) {
+    size_t limit = dangerous_ingredients.size();
+    for (size_t i = 0; i < limit; ++i) {
+        ret += dangerous_ingredients[i].ingredient;
+        if (i != limit - 1) {
             ret += ",";
         }
     }
@@ -203,7 +217,7 @@ int main() {
     Test01();
 
     auto foods = ParseInput(std::cin);
-    std::cout << "Part01:" << Solve01(foods) << std::endl;
-    std::cout << "Part02:" << Solve02(foods) << std::endl;
+    std::cout << "Part01: " << Solve01(foods) << std::endl;
+    std::cout << "Part02: " << Solve02(foods) << std::endl;
     return 0;
 }
