@@ -1,6 +1,9 @@
 .idea/
 .vscode/
 
+# Rust
+target/
+
 # C++
 *.o
 *.exe
