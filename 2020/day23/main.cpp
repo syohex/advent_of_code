@@ -197,6 +197,66 @@ std::string Solve01(const std::vector<int> &cups, int turns) {
     return ret;
 }
 
+std::string Solve01WithMap(const std::vector<int> &cups, int turns) {
+    std::map<int, int> m;
+
+    int min = INT_MAX;
+    int max = INT_MIN;
+    for (size_t i = 0; i < cups.size(); ++i) {
+        min = std::min(min, cups[i]);
+        max = std::max(max, cups[i]);
+        if (i == cups.size() - 1) {
+            m[cups[i]] = cups[0];
+        } else {
+            m[cups[i]] = cups[i + 1];
+        }
+    }
+
+    int current_cup = cups[0];
+    std::vector<int> pickups(3);
+    for (int i = 0; i < turns; ++i) {
+        pickups[0] = m[current_cup];
+        pickups[1] = m[pickups[0]];
+        pickups[2] = m[pickups[1]];
+
+        m[current_cup] = m[pickups[2]];
+        int target = current_cup == min ? max : current_cup - 1;
+        while (true) {
+            bool found = false;
+            for (int pickup : pickups) {
+                if (pickup == target) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                break;
+            }
+
+            do {
+                target = target == min ? max : target - 1;
+            } while (m.find(target) == m.end());
+        }
+
+        m[pickups[2]] = m[target];
+        m[target] = pickups[0];
+        current_cup = m[current_cup];
+    }
+
+    std::string ret;
+    int next = m[1];
+    while (true) {
+        ret.push_back(next + '0');
+        next = m[next];
+        if (next == 1) {
+            break;
+        }
+    }
+
+    return ret;
+}
+
 std::int64_t Solve02(const std::vector<int> &cups, int max_cup, int turns) {
     int max = INT_MIN;
     for (int num : cups) {
@@ -259,6 +319,8 @@ void Test01() {
 
     assert(Solve01(cups, 10) == "92658374");
     assert(Solve01(cups, 100) == "67384529");
+    assert(Solve01WithMap(cups, 10) == "92658374");
+    assert(Solve01WithMap(cups, 100) == "67384529");
 }
 
 void Test02() {
