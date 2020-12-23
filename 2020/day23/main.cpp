@@ -165,7 +165,39 @@ ListNode *PlayGame(const std::vector<int> &cups, int turns) {
     return head;
 }
 
-std::int64_t PlayGame02(const std::vector<int> &cups, int max_cup, int turns) {
+std::vector<int> ParseInput(const std::string &input) {
+    std::vector<int> ret;
+    for (char c : input) {
+        ret.push_back(c - '0');
+    }
+
+    return ret;
+}
+
+std::string Solve01(const std::vector<int> &cups, int turns) {
+    ListNode *head = PlayGame(cups, turns);
+
+    ListNode *one = nullptr;
+    ListNode *p = head;
+    while (true) {
+        if (p->value == 1) {
+            one = p;
+            p = p->next;
+            break;
+        }
+        p = p->next;
+    }
+
+    std::string ret;
+    while (p != one) {
+        ret.push_back(p->value + '0');
+        p = p->next;
+    }
+
+    return ret;
+}
+
+std::int64_t Solve02(const std::vector<int> &cups, int max_cup, int turns) {
     int max = INT_MIN;
     for (int num : cups) {
         max = std::max(max, num);
@@ -220,42 +252,6 @@ std::int64_t PlayGame02(const std::vector<int> &cups, int max_cup, int turns) {
     return next * next_next;
 }
 
-std::vector<int> ParseInput(const std::string &input) {
-    std::vector<int> ret;
-    for (char c : input) {
-        ret.push_back(c - '0');
-    }
-
-    return ret;
-}
-
-std::string Solve01(const std::vector<int> &cups, int turns) {
-    ListNode *head = PlayGame(cups, turns);
-
-    ListNode *one = nullptr;
-    ListNode *p = head;
-    while (true) {
-        if (p->value == 1) {
-            one = p;
-            p = p->next;
-            break;
-        }
-        p = p->next;
-    }
-
-    std::string ret;
-    while (p != one) {
-        ret.push_back(p->value + '0');
-        p = p->next;
-    }
-
-    return ret;
-}
-
-std::int64_t Solve02(const std::vector<int> &cups) {
-    return PlayGame02(cups, 1'000'000, 10'000'000);
-}
-
 void Test01() {
     std::string input("389125467");
     auto cups = ParseInput(input);
@@ -268,7 +264,7 @@ void Test01() {
 void Test02() {
     std::string input("389125467");
     auto cups = ParseInput(input);
-    assert(Solve02(cups) == 149245887792);
+    assert(Solve02(cups, 1'000'000, 10'000'000) == 149245887792);
 }
 
 } // namespace
@@ -280,6 +276,6 @@ int main() {
     std::string input = "137826495";
     auto cups = ParseInput(input);
     std::cout << "Part01: " << Solve01(cups, 100) << std::endl;
-    std::cout << "Part02: " << Solve02(cups) << std::endl;
+    std::cout << "Part02: " << Solve02(cups, 1'000'000, 10'000'000) << std::endl;
     return 0;
 }
