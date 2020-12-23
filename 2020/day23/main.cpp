@@ -4,6 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <climits>
+#include <map>
 
 namespace {
 
@@ -24,13 +25,41 @@ struct ListNode {
         printf("]\n");
     }
 
+    bool Equal(const std::vector<int> &values) {
+        ListNode *p = this;
+        size_t pos = 0;
+        while (true) {
+            if (p->value != values[pos++]) {
+                return false;
+            }
+
+            p = p->next;
+
+            if (p == this) {
+                break;
+            }
+        }
+
+        assert(pos == values.size());
+        return true;
+    }
+
+    std::vector<int> ToVector() {
+        std::vector<int> ret;
+        ListNode *p = this;
+        while (true) {
+            ret.push_back(p->value);
+            p = p->next;
+            if (p == this) {
+                break;
+            }
+        }
+
+        return ret;
+    }
+
     int value;
     ListNode *next;
-};
-
-struct Cups {
-    ListNode *head;
-    size_t size;
 };
 
 ListNode *CreateCircularList(const std::vector<int> &nums) {
@@ -136,6 +165,61 @@ ListNode *PlayGame(const std::vector<int> &cups, int turns) {
     return head;
 }
 
+std::int64_t PlayGame02(const std::vector<int> &cups, int max_cup, int turns) {
+    int max = INT_MIN;
+    for (int num : cups) {
+        max = std::max(max, num);
+    }
+
+    std::map<int, int> m;
+    for (size_t i = 0; i < max_cup; ++i) {
+        if (i < cups.size() - 1) {
+            m[cups[i]] = cups[i + 1];
+        } else if (i == cups.size() - 1) {
+            m[cups.back()] = max + 1;
+        } else {
+            m[i + 1] = i + 2;
+        }
+    }
+
+    m[max_cup] = cups[0];
+    int current_cup = cups.front();
+
+    std::vector<int> pickups(3);
+    for (int i = 0; i < turns; ++i) {
+        pickups[0] = m[current_cup];
+        pickups[1] = m[pickups[0]];
+        pickups[2] = m[pickups[1]];
+
+        m[current_cup] = m[pickups[2]];
+
+        int target = current_cup == 1 ? max_cup : current_cup - 1;
+        while (true) {
+            bool found = false;
+            for (int pickup : pickups) {
+                if (target == pickup) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                break;
+            }
+
+            target = target == 1 ? max_cup : target - 1;
+        }
+
+        m[pickups[2]] = m[target];
+        m[target] = pickups[0];
+        current_cup = m[current_cup];
+    }
+
+    std::int64_t next = m[1];
+    std::int64_t next_next = m[m[1]];
+    return next * next_next;
+}
+
 std::vector<int> ParseInput(const std::string &input) {
     std::vector<int> ret;
     for (char c : input) {
@@ -168,6 +252,10 @@ std::string Solve01(const std::vector<int> &cups, int turns) {
     return ret;
 }
 
+std::int64_t Solve02(const std::vector<int> &cups) {
+    return PlayGame02(cups, 1'000'000, 10'000'000);
+}
+
 void Test01() {
     std::string input("389125467");
     auto cups = ParseInput(input);
@@ -177,13 +265,21 @@ void Test01() {
     assert(Solve01(cups, 100) == "67384529");
 }
 
+void Test02() {
+    std::string input("389125467");
+    auto cups = ParseInput(input);
+    assert(Solve02(cups) == 149245887792);
+}
+
 } // namespace
 
 int main() {
     Test01();
+    Test02();
 
     std::string input = "137826495";
     auto cups = ParseInput(input);
     std::cout << "Part01: " << Solve01(cups, 100) << std::endl;
+    std::cout << "Part02: " << Solve02(cups) << std::endl;
     return 0;
 }
