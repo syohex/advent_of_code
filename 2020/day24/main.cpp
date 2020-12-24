@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <tuple>
 
 namespace {
 
@@ -16,6 +17,18 @@ enum class Direction {
     kWest,
     kNorthWest,
     kNorthEast,
+};
+
+struct Position {
+    explicit Position(int x, int y) : x(x), y(y) {
+    }
+
+    bool operator<(const Position &other) const {
+        return std::tie(x, y) < std::tie(other.x, other.y);
+    }
+
+    int x;
+    int y;
 };
 
 template <typename T>
@@ -54,8 +67,8 @@ std::vector<std::vector<Direction>> ParseInput(T &stream) {
     return ret;
 }
 
-std::map<std::vector<int>, bool> ExecuteInstructions(const std::vector<std::vector<Direction>> &insns) {
-    std::map<std::vector<int>, bool> ret;
+std::map<Position, bool> ExecuteInstructions(const std::vector<std::vector<Direction>> &insns) {
+    std::map<Position, bool> ret;
 
     for (const auto &directions : insns) {
         int x = 0;
@@ -87,7 +100,7 @@ std::map<std::vector<int>, bool> ExecuteInstructions(const std::vector<std::vect
             }
         }
 
-        std::vector<int> key{x, y};
+        Position key(x, y);
         if (ret.find(key) == ret.end()) {
             ret[key] = true; // black
         } else {
@@ -124,18 +137,17 @@ const std::vector<std::vector<int>> &Steps() {
     return steps;
 }
 
-int MatchRule(const std::map<std::vector<int>, bool> &map, int x, int y) {
+int MatchRule(const std::map<Position, bool> &map, const Position &current) {
     int blacks = 0;
 
     for (const auto &step : Steps()) {
-        std::vector<int> key{x + step[0], y + step[1]};
+        Position key(current.x + step[0], current.y + step[1]);
         if (map.find(key) != map.end() && map.at(key)) {
             ++blacks;
         }
     }
 
-    std::vector<int> key{x, y};
-    if (map.find(key) != map.end() && map.at(key)) {
+    if (map.find(current) != map.end() && map.at(current)) {
         return blacks == 0 || blacks > 2;
     } else {
         return blacks == 2;
@@ -148,22 +160,22 @@ int Solve02(const std::vector<std::vector<Direction>> &instructions, int days) {
     for (int i = 0; i < days; ++i) {
         auto orig = tiles;
         for (const auto &it : orig) {
-            std::vector<std::vector<int>> whites;
+            std::vector<Position> whites;
             if (it.second) {
                 for (const auto &step : Steps()) {
-                    std::vector<int> key{it.first[0] + step[0], it.first[1] + step[1]};
+                    Position key(it.first.x + step[0], it.first.y + step[1]);
                     if (orig.find(key) == orig.end()) {
                         whites.push_back(key);
                     }
                 }
             }
 
-            if (MatchRule(orig, it.first[0], it.first[1])) {
+            if (MatchRule(orig, it.first)) {
                 tiles[it.first] = !tiles[it.first];
             }
 
             for (const auto &white : whites) {
-                if (MatchRule(orig, white[0], white[1])) {
+                if (MatchRule(orig, white)) {
                     tiles[white] = true;
                 }
             }
