@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -126,7 +127,8 @@ int MatchRule(const std::map<std::vector<int>, bool> &map, int x, int y) {
         }
     }
 
-    if (map.at(std::vector<int>{x, y})) {
+    std::vector<int> key{x, y};
+    if (map.find(key) != map.end() && map.at(key)) {
         return blacks == 0 || blacks > 2;
     } else {
         return blacks == 2;
@@ -177,18 +179,24 @@ int Solve02(const std::vector<std::vector<Direction>> &instructions, int days) {
     for (int i = 0; i < days; ++i) {
         auto orig = m;
         for (const auto &it : orig) {
-            for (const auto &step : Steps()) {
-                std::vector<int> key{it.first[0] + step[0], it.first[1] + step[1]};
-                if (orig.find(key) == orig.end()) {
-                    m[key] = false;
+            std::vector<std::vector<int>> whites;
+            if (it.second) {
+                for (const auto &step : Steps()) {
+                    std::vector<int> key{it.first[0] + step[0], it.first[1] + step[1]};
+                    if (orig.find(key) == orig.end()) {
+                        whites.push_back(key);
+                    }
                 }
             }
-        }
 
-        orig = m;
-        for (const auto &it : orig) {
             if (MatchRule(orig, it.first[0], it.first[1])) {
                 m[it.first] = !m[it.first];
+            }
+
+            for (const auto &white : whites) {
+                if (MatchRule(orig, white[0], white[1])) {
+                    m[white] = true;
+                }
             }
         }
     }
