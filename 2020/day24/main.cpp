@@ -54,9 +54,10 @@ std::vector<std::vector<Direction>> ParseInput(T &stream) {
     return ret;
 }
 
-int Solve01(const std::vector<std::vector<Direction>> &instructions) {
-    std::map<std::vector<int>, bool> m;
-    for (const auto &directions : instructions) {
+std::map<std::vector<int>, bool> ExecuteInstructions(const std::vector<std::vector<Direction>> &insns) {
+    std::map<std::vector<int>, bool> ret;
+
+    for (const auto &directions : insns) {
         int x = 0;
         int y = 0;
         for (auto dir : directions) {
@@ -87,15 +88,21 @@ int Solve01(const std::vector<std::vector<Direction>> &instructions) {
         }
 
         std::vector<int> key{x, y};
-        if (m.find(key) == m.end()) {
-            m[key] = true; // black
+        if (ret.find(key) == ret.end()) {
+            ret[key] = true; // black
         } else {
-            m[key] = !m[key]; // flip
+            ret[key] = !ret[key]; // flip
         }
     }
 
+    return ret;
+}
+
+int Solve01(const std::vector<std::vector<Direction>> &instructions) {
+    auto tiles = ExecuteInstructions(instructions);
+
     int ret = 0;
-    for (const auto &it : m) {
+    for (const auto &it : tiles) {
         if (it.second) {
             ++ret;
         }
@@ -136,48 +143,10 @@ int MatchRule(const std::map<std::vector<int>, bool> &map, int x, int y) {
 }
 
 int Solve02(const std::vector<std::vector<Direction>> &instructions, int days) {
-    std::map<std::vector<int>, bool> m;
-
-    for (const auto &dirs : instructions) {
-        int x = 0;
-        int y = 0;
-        for (auto dir : dirs) {
-            switch (dir) {
-            case Direction::kEast:
-                x += 2;
-                break;
-            case Direction::kSouthEast:
-                x += 1;
-                y -= 1;
-                break;
-            case Direction::kSouthWest:
-                x -= 1;
-                y -= 1;
-                break;
-            case Direction::kWest:
-                x -= 2;
-                break;
-            case Direction::kNorthWest:
-                x -= 1;
-                y += 1;
-                break;
-            case Direction::kNorthEast:
-                x += 1;
-                y += 1;
-                break;
-            }
-        }
-
-        std::vector<int> key{x, y};
-        if (m.find(key) == m.end()) {
-            m[key] = true; // black
-        } else {
-            m[key] = !m[key]; // flip
-        }
-    }
+    auto tiles = ExecuteInstructions(instructions);
 
     for (int i = 0; i < days; ++i) {
-        auto orig = m;
+        auto orig = tiles;
         for (const auto &it : orig) {
             std::vector<std::vector<int>> whites;
             if (it.second) {
@@ -190,19 +159,19 @@ int Solve02(const std::vector<std::vector<Direction>> &instructions, int days) {
             }
 
             if (MatchRule(orig, it.first[0], it.first[1])) {
-                m[it.first] = !m[it.first];
+                tiles[it.first] = !tiles[it.first];
             }
 
             for (const auto &white : whites) {
                 if (MatchRule(orig, white[0], white[1])) {
-                    m[white] = true;
+                    tiles[white] = true;
                 }
             }
         }
     }
 
     int ret = 0;
-    for (const auto &it : m) {
+    for (const auto &it : tiles) {
         if (it.second) {
             ++ret;
         }
