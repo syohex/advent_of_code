@@ -4,19 +4,30 @@ use std::io::{self, Read};
 struct Line<'a> {
     min: usize,
     max: usize,
-    chr: &'a str,
+    chr: u8,
     message: &'a str,
 }
 
 impl<'a> Line<'a> {
-    fn valid(&self) -> bool {
-        let count = self.message.matches(self.chr).count();
+    fn valid01(&self) -> bool {
+        let c = char::from(self.chr);
+        let count = self.message.matches(c).count();
         count >= self.min && count <= self.max
+    }
+
+    fn valid02(&self) -> bool {
+        let b1 = self.message.as_bytes()[self.min - 1] == self.chr;
+        let b2 = self.message.as_bytes()[self.max - 1] == self.chr;
+        b1 && !b2 || !b1 && b2
     }
 }
 
 fn solve01(lines: &Vec<Line>) -> usize {
-    lines.iter().filter(|&line| line.valid()).count()
+    lines.iter().filter(|&line| line.valid01()).count()
+}
+
+fn solve02(lines: &Vec<Line>) -> usize {
+    lines.iter().filter(|&line| line.valid02()).count()
 }
 
 fn parse_input(input: &str) -> Vec<Line> {
@@ -29,7 +40,7 @@ fn parse_input(input: &str) -> Vec<Line> {
         ret.push(Line {
             min: counts[0],
             max: counts[1],
-            chr: &parts[1][0..1],
+            chr: parts[1].as_bytes()[0],
             message: parts[2],
         });
     }
@@ -45,7 +56,11 @@ fn main() -> io::Result<()> {
     let answer1 = solve01(&lines);
     assert!(answer1 == 580);
 
+    let answer2 = solve02(&lines);
+    assert!(answer2 == 611);
+
     println!("Part01: {}", answer1);
+    println!("Part02: {}", answer2);
     Ok(())
 }
 
