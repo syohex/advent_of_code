@@ -38,6 +38,29 @@ std::int64_t Problem1(const std::vector<MoveData> &moves) {
     return horizontal_pos * depth;
 }
 
+std::int64_t Problem2(const std::vector<MoveData> &moves) {
+    std::int64_t horizontal_pos = 0;
+    std::int64_t depth = 0;
+    std::int64_t aim = 0;
+
+    for (const auto &move : moves) {
+        switch (move.way) {
+        case Way::kForward:
+            horizontal_pos += move.size;
+            depth += aim * move.size;
+            break;
+        case Way::kDown:
+            aim += move.size;
+            break;
+        case Way::kUp:
+            aim -= move.size;
+            break;
+        }
+    }
+
+    return horizontal_pos * depth;
+}
+
 void Test1() {
     // clang-format off
     std::vector<MoveData> moves {
@@ -51,6 +74,7 @@ void Test1() {
     // clang-format on
 
     assert(Problem1(moves) == 150);
+    assert(Problem2(moves) == 900);
 }
 
 } // namespace
@@ -78,6 +102,7 @@ int main() {
     }
 
     std::cout << "Problem1: " << Problem1(moves) << std::endl;
+    std::cout << "Problem2: " << Problem2(moves) << std::endl;
 
     return 0;
 }
