@@ -45,7 +45,7 @@ std::int64_t LifeSupportRating(const std::vector<std::string> &values) {
     std::set<std::string> oxygen_cand(values.begin(), values.end());
     std::set<std::string> co2_cand(values.begin(), values.end());
 
-    const auto is_more_ones = [](const std::set<std::string> &s, size_t index) -> bool {
+    const auto is_ge_ones = [](const std::set<std::string> &s, size_t index) -> bool {
         size_t ones = 0, zeros = 0;
         for (const auto &it : s) {
             if (it[index] == '1') {
@@ -58,48 +58,24 @@ std::int64_t LifeSupportRating(const std::vector<std::string> &values) {
         return ones >= zeros;
     };
 
-    for (size_t i = 0; i < len; ++i) {
-        if (oxygen_cand.size() >= 2) {
-            if (is_more_ones(oxygen_cand, i)) {
-                for (auto it = oxygen_cand.begin(); it != oxygen_cand.end();) {
-                    const auto &value = *it;
-                    if (value[i] == '0') {
-                        it = oxygen_cand.erase(it);
-                    } else {
-                        ++it;
-                    }
-                }
+    const auto filter_by_bit = [](std::set<std::string> &s, char bit, size_t index) {
+        for (auto it = s.begin(); it != s.end();) {
+            if ((*it)[index] == bit) {
+                ++it;
             } else {
-                for (auto it = oxygen_cand.begin(); it != oxygen_cand.end();) {
-                    const auto &value = *it;
-                    if (value[i] == '1') {
-                        it = oxygen_cand.erase(it);
-                    } else {
-                        ++it;
-                    }
-                }
+                it = s.erase(it);
             }
         }
+    };
+
+    for (size_t i = 0; i < len; ++i) {
+        if (oxygen_cand.size() >= 2) {
+            char keep_bit = is_ge_ones(oxygen_cand, i) ? '1' : '0';
+            filter_by_bit(oxygen_cand, keep_bit, i);
+        }
         if (co2_cand.size() >= 2) {
-            if (is_more_ones(co2_cand, i)) {
-                for (auto it = co2_cand.begin(); it != co2_cand.end();) {
-                    const auto &value = *it;
-                    if (value[i] == '1') {
-                        it = co2_cand.erase(it);
-                    } else {
-                        ++it;
-                    }
-                }
-            } else {
-                for (auto it = co2_cand.begin(); it != co2_cand.end();) {
-                    const auto &value = *it;
-                    if (value[i] == '0') {
-                        it = co2_cand.erase(it);
-                    } else {
-                        ++it;
-                    }
-                }
-            }
+            char keep_bit = is_ge_ones(co2_cand, i) ? '0' : '1';
+            filter_by_bit(co2_cand, keep_bit, i);
         }
     }
 
@@ -169,5 +145,7 @@ int main() {
     auto part2 = LifeSupportRating(values);
     std::cout << "Part1: " << part1 << std::endl;
     std::cout << "Part2: " << part2 << std::endl;
+
+    assert(part2 == 4996233);
     return 0;
 }
