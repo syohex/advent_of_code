@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <set>
 
 namespace {
 struct BingoBoard {
@@ -81,6 +82,32 @@ struct Bingo {
         // never reach here
         return -1;
     }
+
+    int PlayToTheLast() {
+        std::set<size_t> unfinished;
+        for (size_t i = 0; i < boards.size(); ++i) {
+            unfinished.insert(i);
+        }
+
+        for (int num : nums) {
+            for (size_t i = 0; i < boards.size(); ++i) {
+                if (unfinished.find(i) == unfinished.end()) {
+                    continue;
+                }
+
+                boards[i].Set(num);
+                if (boards[i].Check()) {
+                    unfinished.erase(i);
+                    if (unfinished.empty()) {
+                        return num * boards[i].Score();
+                    }
+                }
+            }
+        }
+
+        // never reach here
+        return -1;
+    }
 };
 
 Bingo ParseInput(std::istream &ss) {
@@ -115,7 +142,7 @@ Bingo ParseInput(std::istream &ss) {
     return ret;
 }
 
-void Test1() {
+void Test() {
     std::string input(R"(7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1
 
 22 13 17 11  0
@@ -140,16 +167,19 @@ void Test1() {
     std::istringstream ss(input);
     auto bingo = ParseInput(ss);
     assert(bingo.Play() == 4512);
+    assert(bingo.PlayToTheLast() == 1924);
 }
 
 } // namespace
 
 int main() {
-    Test1();
+    Test();
 
     Bingo bingo = ParseInput(std::cin);
     int part1 = bingo.Play();
+    int part2 = bingo.PlayToTheLast();
 
     std::cout << "Part1: " << part1 << std::endl;
+    std::cout << "Part2: " << part2 << std::endl;
     return 0;
 }
