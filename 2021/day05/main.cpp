@@ -111,26 +111,28 @@ int Part2(const std::vector<LineData> &data) {
             }
         } else if (d.IsDiagonal()) {
             int diff = std::abs(d.x1 - d.x2);
+            int x_velocity;
+            int y_velocity;
             if (d.x1 <= d.x2) {
                 if (d.y1 <= d.y2) {
-                    for (int i = 0; i <= diff; ++i) {
-                        diagram[d.y1 + i][d.x1 + i] += 1;
-                    }
+                    x_velocity = 1;
+                    y_velocity = 1;
                 } else {
-                    for (int i = 0; i <= diff; ++i) {
-                        diagram[d.y1 - i][d.x1 + i] += 1;
-                    }
+                    x_velocity = 1;
+                    y_velocity = -1;
                 }
             } else {
                 if (d.y2 <= d.y1) {
-                    for (int i = 0; i <= diff; ++i) {
-                        diagram[d.y2 + i][d.x2 + i] += 1;
-                    }
+                    x_velocity = -1;
+                    y_velocity = -1;
                 } else {
-                    for (int i = 0; i <= diff; ++i) {
-                        diagram[d.y2 - i][d.x2 + i] += 1;
-                    }
+                    x_velocity = -1;
+                    y_velocity = 1;
                 }
+            }
+
+            for (int i = 0; i <= diff; ++i) {
+                diagram[d.y1 + i * y_velocity][d.x1 + i * x_velocity] += 1;
             }
         }
     }
