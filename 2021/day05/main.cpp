@@ -37,7 +37,11 @@ std::vector<LineData> ParseInput(std::istream &ss) {
         }
 
         int x1, y1, x2, y2;
+#if _WIN32
+        sscanf_s(tmp.c_str(), "%d,%d -> %d,%d", &x1, &y1, &x2, &y2);
+#else
         sscanf(tmp.c_str(), "%d,%d -> %d,%d", &x1, &y1, &x2, &y2);
+#endif
         ret.push_back({x1, y1, x2, y2});
     }
 
