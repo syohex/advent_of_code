@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <sstream>
 #include <string>
+#include <cmath>
 
 namespace {
 
@@ -20,6 +21,10 @@ struct LineData {
 
     bool IsVertical() const {
         return x1 == x2;
+    }
+
+    bool IsDiagonal() const {
+        return std::abs(x1 - x2) == std::abs(y1 - y2);
     }
 };
 
@@ -80,6 +85,68 @@ int Part1(const std::vector<LineData> &data) {
     return ret;
 }
 
+int Part2(const std::vector<LineData> &data) {
+    int max_x = -1;
+    int max_y = -1;
+
+    for (const auto &d : data) {
+        max_x = std::max({max_x, d.x1, d.x2});
+        max_y = std::max({max_y, d.y1, d.y2});
+    }
+
+    std::vector<std::vector<int>> diagram(max_y + 1, std::vector<int>(max_x + 1, 0));
+
+    for (const auto &d : data) {
+        if (d.IsHorizontal()) {
+            int start = std::min(d.x1, d.x2);
+            int end = std::max(d.x1, d.x2);
+            for (int i = start; i <= end; ++i) {
+                diagram[d.y1][i] += 1;
+            }
+        } else if (d.IsVertical()) {
+            int start = std::min(d.y1, d.y2);
+            int end = std::max(d.y1, d.y2);
+            for (int i = start; i <= end; ++i) {
+                diagram[i][d.x1] += 1;
+            }
+        } else if (d.IsDiagonal()) {
+            int diff = std::abs(d.x1 - d.x2);
+            if (d.x1 <= d.x2) {
+                if (d.y1 <= d.y2) {
+                    for (int i = 0; i <= diff; ++i) {
+                        diagram[d.y1 + i][d.x1 + i] += 1;
+                    }
+                } else {
+                    for (int i = 0; i <= diff; ++i) {
+                        diagram[d.y1 - i][d.x1 + i] += 1;
+                    }
+                }
+            } else {
+                if (d.y2 <= d.y1) {
+                    for (int i = 0; i <= diff; ++i) {
+                        diagram[d.y2 + i][d.x2 + i] += 1;
+                    }
+                } else {
+                    for (int i = 0; i <= diff; ++i) {
+                        diagram[d.y2 - i][d.x2 + i] += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    int ret = 0;
+    for (int i = 0; i <= max_y; ++i) {
+        for (int j = 0; j <= max_x; ++j) {
+            if (diagram[i][j] >= 2) {
+                ++ret;
+            }
+        }
+    }
+
+    return ret;
+}
+
 void Test1() {
     std::string input(R"(0,9 -> 5,9
 8,0 -> 0,8
@@ -95,6 +162,7 @@ void Test1() {
     std::istringstream ss(input);
     auto data = ParseInput(ss);
     assert(Part1(data) == 5);
+    assert(Part2(data) == 12);
 }
 
 } // namespace
@@ -104,7 +172,9 @@ int main() {
 
     auto line_data = ParseInput(std::cin);
     auto part1 = Part1(line_data);
+    auto part2 = Part2(line_data);
 
     std::cout << "Part1: " << part1 << std::endl;
+    std::cout << "Part2: " << part2 << std::endl;
     return 0;
 }
