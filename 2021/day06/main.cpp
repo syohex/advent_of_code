@@ -7,7 +7,7 @@
 
 namespace {
 
-size_t Part1(const std::vector<int> &data, int days) {
+std::int64_t Part1(const std::vector<int> &data, int days) {
     std::vector<int> values(data);
 
     for (int i = 0; i < days; ++i) {
@@ -26,10 +26,10 @@ size_t Part1(const std::vector<int> &data, int days) {
         }
     }
 
-    return values.size();
+    return static_cast<std::int64_t>(values.size());
 }
 
-size_t Part2(const std::vector<int> &data, int days) {
+std::int64_t Part2(const std::vector<int> &data, int days) {
     std::map<int, std::int64_t> m;
     for (int d : data) {
         ++m[d];
