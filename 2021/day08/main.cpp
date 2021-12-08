@@ -67,13 +67,16 @@ struct Data {
             }
         }
 
+        // find 3
         for (size_t i : five_segments) {
             if (just_match(candidates[i], numbers[1])) {
                 checked[i] = true;
                 numbers[3] = candidates[i];
+                break;
             }
         }
 
+        // find 5
         for (size_t i : five_segments) {
             if (checked[i]) {
                 continue;
@@ -85,6 +88,7 @@ struct Data {
             }
         }
 
+        // find 2
         for (size_t i : five_segments) {
             if (checked[i]) {
                 continue;
@@ -94,6 +98,7 @@ struct Data {
             numbers[2] = candidates[i];
         }
 
+        // find 0
         for (size_t i = 0; i < candidates.size(); ++i) {
             if (checked[i]) {
                 continue;
@@ -108,6 +113,7 @@ struct Data {
             }
         }
 
+        // find 6
         for (size_t i = 0; i < candidates.size(); ++i) {
             if (checked[i]) {
                 continue;
@@ -122,19 +128,15 @@ struct Data {
 
         std::map<std::string, int> m;
         for (size_t i = 0; i < numbers.size(); ++i) {
-            std::string tmp(numbers[i]);
-            std::sort(tmp.begin(), tmp.end());
-            m[tmp] = static_cast<int>(i);
+            m[numbers[i]] = static_cast<int>(i);
         }
 
         std::int64_t ret = 0;
         for (const auto &str : output) {
-            std::string tmp(str);
-            std::sort(tmp.begin(), tmp.end());
-            if (m.find(tmp) == m.end()) {
-                throw "never reach here";
+            if (m.find(str) == m.end()) {
+                assert(false && "not found");
             }
-            ret = ret * 10 + m[tmp];
+            ret = ret * 10 + m[str];
         }
 
         return ret;
@@ -173,6 +175,7 @@ std::vector<std::string> SplitString(const std::string &str) {
             continue;
         }
 
+        std::sort(tmp.begin(), tmp.end());
         ret.push_back(tmp);
     }
 
