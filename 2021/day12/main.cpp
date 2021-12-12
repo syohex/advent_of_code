@@ -32,8 +32,8 @@ Graph ParseInput(std::istream &ss) {
 }
 
 int Part1(const Graph &graph) {
-    std::function<int(const std::string &point, std::vector<std::string> &paths, std::set<std::string> &checked)> f;
-    f = [&](const std::string &point, std::vector<std::string> &paths, std::set<std::string> &checked) -> int {
+    std::function<int(const std::string &point, std::set<std::string> &checked)> f;
+    f = [&](const std::string &point, std::set<std::string> &checked) -> int {
         if (point == "end") {
             return 1;
         }
@@ -53,9 +53,7 @@ int Part1(const Graph &graph) {
                 checked.insert(p);
             }
 
-            paths.push_back(p);
-            ret += f(p, paths, checked);
-            paths.pop_back();
+            ret += f(p, checked);
 
             if (is_small) {
                 checked.erase(p);
@@ -65,9 +63,8 @@ int Part1(const Graph &graph) {
         return ret;
     };
 
-    std::vector<std::string> paths{"start"};
     std::set<std::string> checked{"start"};
-    return f("start", paths, checked);
+    return f("start", checked);
 }
 
 int Part2(const Graph &graph) {
