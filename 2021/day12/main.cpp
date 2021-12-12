@@ -70,6 +70,54 @@ int Part1(const Graph &graph) {
     return f("start", paths, checked);
 }
 
+int Part2(const Graph &graph) {
+    std::function<int(const std::string &point, std::map<std::string, int> &checked)> f;
+    f = [&](const std::string &point, std::map<std::string, int> &checked) -> int {
+        if (point == "end") {
+            return 1;
+        }
+
+        if (graph.find(point) == graph.end()) {
+            return 0;
+        }
+
+        int ret = 0;
+        for (const auto &p : graph.at(point)) {
+            if (p == "start") {
+                continue;
+            }
+
+            bool is_small = p[0] >= 'a' && p[0] <= 'z';
+            if (is_small) {
+                bool has_twice = false;
+                for (const auto &it : checked) {
+                    if (it.second >= 2) {
+                        has_twice = true;
+                        break;
+                    }
+                }
+
+                if (has_twice && checked[p] >= 1) {
+                    continue;
+                }
+
+                ++checked[p];
+            }
+
+            ret += f(p, checked);
+
+            if (is_small) {
+                --checked[p];
+            }
+        }
+
+        return ret;
+    };
+
+    std::map<std::string, int> checked{{"start", 1}};
+    return f("start", checked);
+}
+
 void Test() {
     {
         std::string input(R"(start-A
@@ -83,7 +131,9 @@ b-end)");
         std::stringstream ss(input);
         auto data = ParseInput(ss);
         auto part1 = Part1(data);
+        auto part2 = Part2(data);
         assert(part1 == 10);
+        assert(part2 == 36);
     } // namespace
 
     {
@@ -100,7 +150,9 @@ kj-dc)");
         std::stringstream ss(input);
         auto data = ParseInput(ss);
         auto part1 = Part1(data);
+        auto part2 = Part2(data);
         assert(part1 == 19);
+        assert(part2 == 103);
     }
     {
         std::string input(R"(fs-end
@@ -125,7 +177,9 @@ start-RW)");
         std::stringstream ss(input);
         auto data = ParseInput(ss);
         auto part1 = Part1(data);
+        auto part2 = Part2(data);
         assert(part1 == 226);
+        assert(part2 == 3509);
     }
 }
 
@@ -136,7 +190,9 @@ int main() {
 
     auto graph = ParseInput(std::cin);
     auto part1 = Part1(graph);
+    auto part2 = Part2(graph);
 
     std::cout << "Part1: " << part1 << std::endl;
+    std::cout << "Part2: " << part2 << std::endl;
     return 0;
 }
