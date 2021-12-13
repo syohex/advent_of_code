@@ -72,7 +72,7 @@ std::int64_t Part1(const Data &data, int count) {
                 }
             }
 
-            cols = inst.position;
+            cols = inst.position - 1;
         } else {
             for (int row = inst.position + 1, offset = 1; row <= rows; ++row, ++offset) {
                 for (int col = 0; col <= cols; ++col) {
@@ -84,7 +84,7 @@ std::int64_t Part1(const Data &data, int count) {
                 }
             }
 
-            rows = inst.position;
+            rows = inst.position - 1;
         }
     }
 
@@ -116,7 +116,7 @@ void Part2(const Data &data) {
                 }
             }
 
-            cols = inst.position;
+            cols = inst.position - 1;
         } else {
             for (int row = inst.position + 1, offset = 1; row <= rows; ++row, ++offset) {
                 for (int col = 0; col <= cols; ++col) {
@@ -128,7 +128,7 @@ void Part2(const Data &data) {
                 }
             }
 
-            rows = inst.position;
+            rows = inst.position - 1;
         }
     }
 
