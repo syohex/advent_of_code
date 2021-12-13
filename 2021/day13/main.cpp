@@ -62,33 +62,29 @@ std::int64_t Part1(const Data &data, int count) {
     for (int i = 0; i < count; ++i) {
         const auto &inst = data.instructions[i];
         if (inst.orientation == 'x') {
-            int col_base = cols / 2;
-            int col_start = col_base + 1;
             for (int row = 0; row <= rows; ++row) {
-                for (int col = col_start, offset = 1; col <= cols; ++col, ++offset) {
+                for (int col = inst.position + 1, offset = 1; col <= cols; ++col, ++offset) {
                     if (grid[row][col] == '.') {
                         continue;
                     }
 
-                    grid[row][col_base - offset] = '#';
+                    grid[row][inst.position - offset] = '#';
                 }
             }
 
-            cols /= 2;
+            cols = inst.position;
         } else {
-            int row_base = rows / 2;
-            int row_start = row_base + 1;
-            for (int row = row_start, offset = 1; row <= rows; ++row, ++offset) {
+            for (int row = inst.position + 1, offset = 1; row <= rows; ++row, ++offset) {
                 for (int col = 0; col <= cols; ++col) {
                     if (grid[row][col] == '.') {
                         continue;
                     }
 
-                    grid[row_base - offset][col] = '#';
+                    grid[inst.position - offset][col] = '#';
                 }
             }
 
-            rows /= 2;
+            rows = inst.position;
         }
     }
 
@@ -102,6 +98,50 @@ std::int64_t Part1(const Data &data, int count) {
     }
 
     return ret;
+}
+
+void Part2(const Data &data) {
+    auto grid = data.grid;
+    int rows = grid.size() - 1;
+    int cols = grid[0].size() - 1;
+    for (const auto &inst : data.instructions) {
+        if (inst.orientation == 'x') {
+            for (int row = 0; row <= rows; ++row) {
+                for (int col = inst.position + 1, offset = 1; col <= cols; ++col, ++offset) {
+                    if (grid[row][col] == '.') {
+                        continue;
+                    }
+
+                    grid[row][inst.position - offset] = '#';
+                }
+            }
+
+            cols = inst.position;
+        } else {
+            for (int row = inst.position + 1, offset = 1; row <= rows; ++row, ++offset) {
+                for (int col = 0; col <= cols; ++col) {
+                    if (grid[row][col] == '.') {
+                        continue;
+                    }
+
+                    grid[inst.position - offset][col] = '#';
+                }
+            }
+
+            rows = inst.position;
+        }
+    }
+
+    for (int i = 0; i <= rows; ++i) {
+        for (int j = 0; j <= cols; ++j) {
+            if (grid[i][j] == '#') {
+                printf("%c", grid[i][j]);
+            } else {
+                printf(" ");
+            }
+        }
+        printf("\n");
+    }
 }
 
 void Test() {
@@ -131,6 +171,7 @@ fold along x=5)");
     auto data = ParseInput(ss);
     auto part1 = Part1(data, 1);
     assert(part1 == 17);
+    Part2(data);
 }
 
 } // namespace
@@ -140,8 +181,8 @@ int main() {
 
     auto data = ParseInput(std::cin);
     auto part1 = Part1(data, 1);
-
     std::cout << "Part1: " << part1 << std::endl;
-    std::cout << "Part2: " << 2 << std::endl;
+
+    Part2(data);
     return 0;
 }
