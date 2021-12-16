@@ -120,26 +120,24 @@ Packet DecodePacket(const std::vector<int> &bits, size_t &pos) {
         ++pos;
         if (id == 0) {
             int length = 0;
-            for (unsigned int i = 0; i < 15; ++i) {
+            for (int i = 0; i < 15; ++i) {
                 length = length * 2 + bits[pos];
                 ++pos;
             }
 
             size_t limit = pos + length;
             while (pos < limit) {
-                Packet p = DecodePacket(bits, pos);
-                ret.sub_packets.push_back(p);
+                ret.sub_packets.push_back(DecodePacket(bits, pos));
             }
         } else {
-            unsigned int length = 0;
+            int count = 0;
             for (int i = 0; i < 11; ++i) {
-                length = length * 2 + bits[pos];
+                count = count * 2 + bits[pos];
                 ++pos;
             }
 
-            for (unsigned int i = 0; i < length; ++i) {
-                Packet p = DecodePacket(bits, pos);
-                ret.sub_packets.push_back(p);
+            for (int i = 0; i < count; ++i) {
+                ret.sub_packets.push_back(DecodePacket(bits, pos));
             }
         }
     }
@@ -149,11 +147,9 @@ Packet DecodePacket(const std::vector<int> &bits, size_t &pos) {
 
 std::int64_t TotalVersions(const Packet &p) {
     std::int64_t ret = p.version;
-
     for (const auto &sub_packet : p.sub_packets) {
         ret += TotalVersions(sub_packet);
     }
-
     return ret;
 }
 
