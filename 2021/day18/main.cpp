@@ -210,7 +210,11 @@ std::unique_ptr<Pair> ParsePair(const std::string &input) {
         }
     }
 
-    return std::unique_ptr<Pair>(p->left_);
+    std::unique_ptr<Pair> ret(p->left_);
+    p->left_ = nullptr;
+    delete p;
+
+    return ret;
 }
 
 std::vector<std::unique_ptr<Pair>> ParseInput(std::istream &ss) {
