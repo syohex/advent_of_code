@@ -7,163 +7,185 @@
 #include <cmath>
 #include <sstream>
 #include <algorithm>
+#include <memory>
 
 namespace {
 
-struct Pair {
-    Pair *left;
-    Pair *right;
-    int value;
+struct Pair;
+struct Route {
+    Pair *parent;
+    bool is_left;
+};
 
-    Pair() : left(nullptr), right(nullptr) {
+struct Pair {
+    Pair *left_;
+    Pair *right_;
+    int value_;
+
+    Pair() : left_(nullptr), right_(nullptr) {
     }
 
-    explicit Pair(Pair *left, Pair *right) : left(left), right(right) {
+    explicit Pair(Pair *left, Pair *right) : left_(left), right_(right) {
     }
 
     explicit Pair(int value) : Pair() {
-        this->value = value;
+        this->value_ = value;
     }
 
     ~Pair() {
-        delete left;
-        delete right;
+        delete left_;
+        delete right_;
     }
 
-    int Magnitude() const {
-        if (left == nullptr && right == nullptr) {
-            return value;
+    int Magnitude() const noexcept {
+        if (left_ == nullptr && right_ == nullptr) {
+            return value_;
         }
-
-        int left_value = left->Magnitude();
-        int right_value = right->Magnitude();
-
-        return left_value * 3 + right_value * 2;
-    }
-
-    bool Explode(int depth, int &count, Pair *head) {
-        if (left == nullptr && right == nullptr) {
-            count += 1;
-            return false;
-        }
-
-        if (depth >= 4) {
-            int counter = 0;
-            head->AddNthElement(count, left->value, counter);
-            counter = 0;
-            head->AddNthElement(count + 3, right->value, counter);
-            return true;
-        }
-
-        if (left->Explode(depth + 1, count, head)) {
-            delete left;
-            left = new Pair(0);
-            count += 1;
-        }
-
-        if (right->Explode(depth + 1, count, head)) {
-            delete right;
-            right = new Pair(0);
-            count += 1;
-        }
-
-        return false;
-    }
-
-    void AddNthElement(int n, int val, int &count) {
-        if (left == nullptr && right == nullptr) {
-            count += 1;
-            if (n == count) {
-                value += val;
+        std::function<int(const Pair *node)> f;
+        f = [&f](const Pair *node) -> int {
+            if (node->left_ == nullptr && node->right_ == nullptr) {
+                return node->value_;
             }
-            return;
-        }
-        if (count > n) {
-            return;
-        }
 
-        left->AddNthElement(n, val, count);
-        right->AddNthElement(n, val, count);
+            return f(node->left_) * 3 + f(node->right_) * 2;
+        };
+
+        return left_->Magnitude() * 3 + right_->Magnitude() * 2;
     }
 
-    bool Split() {
-        if (left == nullptr && right == nullptr) {
-            if (value >= 10) {
-                left = new Pair(value / 2.0);
-                right = new Pair(std::round(value / 2.0));
+    bool IsLeaf() const noexcept {
+        return left_ == nullptr && right_ == nullptr;
+    }
+
+    static void AddLeftNeighbor(const std::vector<Route> &routes, int value) {
+        for (auto it = routes.rbegin(); it != routes.rend(); ++it) {
+            if (!it->is_left) {
+                Pair *p = it->parent->left_;
+                while (!p->IsLeaf()) {
+                    p = p->right_;
+                }
+
+                p->value_ += value;
+                return;
+            }
+        }
+    }
+
+    static void AddRightNeighbor(const std::vector<Route> &routes, int value) {
+        for (auto it = routes.rbegin(); it != routes.rend(); ++it) {
+            if (it->is_left) {
+                Pair *p = it->parent->right_;
+                while (!p->IsLeaf()) {
+                    p = p->left_;
+                }
+
+                p->value_ += value;
+                return;
+            }
+        }
+    }
+
+    void Explode() {
+        std::function<bool(Pair * node, int depth, std::vector<Route> &routes)> f;
+        f = [&f](Pair *node, int depth, std::vector<Route> &routes) -> bool {
+            if (node->IsLeaf()) {
+                return false;
+            }
+
+            if (depth >= 4) {
+                AddLeftNeighbor(routes, node->left_->value_);
+                AddRightNeighbor(routes, node->right_->value_);
                 return true;
             }
 
+            routes.push_back({node, true});
+            if (f(node->left_, depth + 1, routes)) {
+                delete node->left_;
+                node->left_ = new Pair(0);
+            }
+
+            routes.back().is_left = false;
+            if (f(node->right_, depth + 1, routes)) {
+                delete node->right_;
+                node->right_ = new Pair(0);
+            }
+            routes.pop_back();
+
             return false;
+        };
+
+        std::vector<Route> routes;
+        (void)f(this, 0, routes);
+    }
+
+    static Pair *ConcatPair(Pair *p1, Pair *p2) {
+        std::function<void(Pair * node, Pair * copied)> f;
+        f = [&f](Pair *node, Pair *copied) {
+            if (node->IsLeaf()) {
+                copied->value_ = node->value_;
+                return;
+            }
+
+            copied->left_ = new Pair();
+            f(node->left_, copied->left_);
+            copied->right_ = new Pair();
+            f(node->right_, copied->right_);
+        };
+
+        Pair *ret = new Pair();
+        ret->left_ = new Pair();
+        ret->right_ = new Pair();
+
+        f(p1, ret->left_);
+        f(p2, ret->right_);
+        return ret;
+    }
+
+    bool Split() {
+        if (IsLeaf()) {
+            if (value_ < 10) {
+                return false;
+            }
+
+            left_ = new Pair(value_ / 2.0);
+            right_ = new Pair(std::round(value_ / 2.0));
+            return true;
         }
 
-        return left->Split() || right->Split();
+        if (left_->Split()) {
+            // change only left most value
+            return true;
+        }
+
+        return right_->Split();
     }
 
     Pair *Add(Pair *other) {
-        Pair *ret = new Pair(this, other);
-
+        Pair *ret = ConcatPair(this, other);
         while (true) {
-            int count = 0;
-            ret->Explode(0, count, ret);
+            ret->Explode();
             if (!ret->Split()) {
                 break;
             }
         }
-
         return ret;
-    }
-
-    Pair *Copy() {
-        std::function<void(Pair * n, Pair * *p)> f;
-        f = [&](Pair *n, Pair **p) {
-            if (n->left == nullptr && n->right == nullptr) {
-                (*p)->value = n->value;
-                return;
-            }
-
-            Pair *left = new Pair();
-            f(n->left, &left);
-            (*p)->left = left;
-
-            Pair *right = new Pair();
-            f(n->right, &right);
-            (*p)->right = right;
-        };
-
-        Pair *p = new Pair();
-        f(this, &p);
-        return p;
-    }
-
-    void Print() {
-        if (left == nullptr && right == nullptr) {
-            printf(" %d ", value);
-            return;
-        }
-
-        printf("[");
-        left->Print();
-        printf(",");
-        right->Print();
-        printf("]");
     }
 };
 
-Pair *ParsePair(const std::string &input) {
+std::unique_ptr<Pair> ParsePair(const std::string &input) {
     std::vector<Pair *> stack;
 
     Pair *p = new Pair();
     for (char c : input) {
         if (c == '[') {
-            if (p->left == nullptr) {
-                p->left = new Pair();
+            if (p->left_ == nullptr) {
+                p->left_ = new Pair();
                 stack.push_back(p);
-                p = p->left;
+                p = p->left_;
             } else {
-                p->right = new Pair();
+                p->right_ = new Pair();
                 stack.push_back(p);
-                p = p->right;
+                p = p->right_;
             }
 
             continue;
@@ -180,19 +202,19 @@ Pair *ParsePair(const std::string &input) {
 
         if (c >= '0' && c <= '9') {
             int value = c - '0';
-            if (p->left == nullptr) {
-                p->left = new Pair(value);
+            if (p->left_ == nullptr) {
+                p->left_ = new Pair(value);
             } else {
-                p->right = new Pair(value);
+                p->right_ = new Pair(value);
             }
         }
     }
 
-    return p->left;
+    return std::unique_ptr<Pair>(p->left_);
 }
 
-std::vector<Pair *> ParseInput(std::istream &ss) {
-    std::vector<Pair *> ret;
+std::vector<std::unique_ptr<Pair>> ParseInput(std::istream &ss) {
+    std::vector<std::unique_ptr<Pair>> ret;
     std::string tmp;
     while (std::getline(ss, tmp)) {
         if (tmp.empty()) {
@@ -205,29 +227,46 @@ std::vector<Pair *> ParseInput(std::istream &ss) {
     return ret;
 }
 
-int Part1(const std::vector<Pair *> &pairs) {
-    Pair *base = pairs[0];
-    for (size_t i = 1; i < pairs.size(); ++i) {
-        base = base->Add(pairs[i]);
-    }
+void PrintPair(const Pair *root) {
+    std::function<void(const Pair *node)> f;
+    f = [&f](const Pair *node) {
+        if (node->IsLeaf()) {
+            printf("%d", node->value_);
+            return;
+        }
 
+        printf("[");
+        f(node->left_);
+        printf(",");
+        f(node->right_);
+        printf("]");
+    };
+
+    f(root);
+    printf("\n");
+}
+
+int Part1(const std::vector<std::unique_ptr<Pair>> &pairs) {
+    Pair *base = pairs[0].get();
+    for (size_t i = 1; i < pairs.size(); ++i) {
+        base = base->Add(pairs[i].get());
+    }
     return base->Magnitude();
 }
 
-int Part2(const std::vector<Pair *> &pairs) {
+int Part2(const std::vector<std::unique_ptr<Pair>> &pairs) {
     int ret = 0;
     int len = pairs.size();
 
-    for (int i = 0; i < len; ++i) {
-        for (int j = 0; j < len; ++j) {
+    for (int i = 0; i < len - 1; ++i) {
+        for (int j = i + 1; j < len; ++j) {
             if (i == j) {
                 continue;
             }
 
-            auto *p1 = pairs[i]->Copy();
-            auto *p2 = pairs[j]->Copy();
-            auto p = p1->Add(p2);
-            ret = std::max(ret, p->Magnitude());
+            std::unique_ptr<Pair> p1(pairs[i]->Add(pairs[j].get()));
+            std::unique_ptr<Pair> p2(pairs[j]->Add(pairs[i].get()));
+            ret = std::max({ret, p1->Magnitude(), p2->Magnitude()});
         }
     }
 
@@ -246,10 +285,15 @@ void Test() {
                      {"[[[[5,0],[7,4]],[5,5]],[6,6]]", 1137},
                      {"[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]", 3488}};
         for (const auto &t : tests) {
-            auto *pair = ParsePair(t.input);
+            auto pair = ParsePair(t.input);
             assert(pair->Magnitude() == t.expected);
-            delete pair;
         }
+    }
+    {
+        auto p1 = ParsePair("[[[[4,3],4],4],[7,[[8,4],9]]]");
+        auto p2 = ParsePair("[1,1]");
+        auto p3 = p1->Add(p2.get());
+        PrintPair(p3);
     }
     {
         std::string input(R"([[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]
