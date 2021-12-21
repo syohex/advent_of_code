@@ -9,12 +9,32 @@
 
 namespace {
 
-struct Position {
-    int p1;
-    int p2;
+struct Player {
+    int position;
+    int score;
+
+    explicit Player(int position) : position(position), score(0) {
+    }
+
+    bool operator<(const Player &other) const {
+        return std::tie(position, score) < std::tie(other.position, other.score);
+    }
 };
 
-Position ParseInput(const std::string &input) {
+struct GameState {
+    Player player1;
+    Player player2;
+    bool is_player1;
+
+    explicit GameState(const Player &p1, const Player &p2) : player1(p1), player2(p2), is_player1(true) {
+    }
+
+    bool operator<(const GameState &other) const {
+        return std::tie(player1, player2, is_player1) < std::tie(other.player1, other.player2, other.is_player1);
+    }
+};
+
+GameState ParseInput(const std::string &input) {
     int p1, p2;
 
     std::stringstream ss(input);
@@ -32,73 +52,44 @@ Position ParseInput(const std::string &input) {
 #else
     sscanf(tmp.c_str(), "Player 2 starting position: %d", &p2);
 #endif
-    return Position{p1, p2};
+    return GameState(Player(p1), Player(p2));
 }
 
-std::int64_t Part1(const Position &p) {
-    int p1 = p.p1;
-    int p2 = p.p2;
+std::int64_t Part1(const GameState &init_state) {
+    GameState state = init_state;
     int dice = 1;
-
-    std::int64_t score1 = 0, score2 = 0;
-    std::int64_t count = 0;
-    std::int64_t ret = 0;
-
-    const auto roll_dice = [](int &dice) {
-        ++dice;
-        if (dice >= 101) {
-            dice = 1;
-        }
-    };
+    std::int64_t roll_count = 0;
 
     while (true) {
+        auto &current_player = state.is_player1 ? state.player1 : state.player2;
+        auto &other_player = state.is_player1 ? state.player2 : state.player1;
+
+        int position = current_player.position;
         for (int i = 0; i < 3; ++i) {
-            p1 += dice;
-            roll_dice(dice);
+            position += dice;
+            ++dice;
+            if (dice >= 101) {
+                dice = 1;
+            }
         }
-        count += 3;
+        roll_count += 3;
 
-        int mod = p1 % 10;
-        p1 = mod == 0 ? 10 : mod;
-        score1 += p1;
+        int mod = position % 10;
+        position = mod == 0 ? 10 : mod;
 
-        if (score1 >= 1000) {
-            ret = score2 * count;
-            break;
+        current_player.score += position;
+        current_player.position = position;
+
+        if (current_player.score >= 1000) {
+            return other_player.score * roll_count;
         }
 
-        for (int i = 0; i < 3; ++i) {
-            p2 += dice;
-            roll_dice(dice);
-        }
-        count += 3;
-
-        mod = p2 % 10;
-        p2 = mod == 0 ? 10 : mod;
-        score2 += p2;
-
-        if (score2 >= 1000) {
-            ret = score1 * count;
-            break;
-        }
+        state.is_player1 = !state.is_player1;
     }
 
-    return ret;
+    assert(!"never reach here");
+    return -1;
 }
-
-struct State {
-    int p1;
-    int p2;
-    int score1;
-    int score2;
-    bool is_player1;
-
-    bool operator<(const State &a) const {
-        auto v1 = std::tie(p1, p2, score1, score2, is_player1);
-        auto v2 = std::tie(a.p1, a.p2, a.score1, a.score2, a.is_player1);
-        return v1 < v2;
-    }
-};
 
 std::map<int, int> AllSteps() {
     std::map<int, int> ret;
@@ -125,52 +116,46 @@ std::map<int, int> AllSteps() {
     return ret;
 }
 
-std::int64_t Part2(const Position &p) {
+std::int64_t Part2(const GameState &init_state) {
     auto steps = AllSteps();
 
-    std::map<State, std::int64_t> m;
-    m.insert({State{p.p1, p.p2, 0, 0, true}, 1});
+    std::map<GameState, std::int64_t> all_state;
+    all_state.insert({init_state, 1});
 
     constexpr int GOAL_SCORE = 21;
     std::int64_t ret = 0;
-    while (!m.empty()) {
-        std::map<State, std::int64_t> tmp;
-        for (const auto &it : m) {
-            const auto &prev_state = it.first;
+    while (!all_state.empty()) {
+        decltype(all_state) tmp;
+        for (const auto &it : all_state) {
+            const auto &current_state = it.first;
             auto state_count = it.second;
 
             for (const auto &it : steps) {
-                State s = prev_state;
                 int step = it.first;
                 int step_count = it.second;
 
-                s.is_player1 = !prev_state.is_player1;
-                if (prev_state.is_player1) {
-                    s.p1 += step;
-                    if (s.p1 > 10) {
-                        s.p1 -= 10;
-                    }
-                    s.score1 += s.p1;
-                    if (s.score1 >= GOAL_SCORE) {
-                        ret += step_count * state_count;
-                        continue;
-                    }
-                } else {
-                    s.p2 += step;
-                    if (s.p2 > 10) {
-                        s.p2 -= 10;
-                    }
-                    s.score2 += s.p2;
-                    if (s.score2 >= GOAL_SCORE) {
-                        continue;
-                    }
+                GameState next_state = current_state;
+                next_state.is_player1 = !current_state.is_player1;
+
+                Player &player = current_state.is_player1 ? next_state.player1 : next_state.player2;
+                player.position += step;
+                if (player.position > 10) {
+                    player.position -= 10;
                 }
 
-                tmp[s] += step_count * state_count;
+                player.score += player.position;
+                if (player.score >= GOAL_SCORE) {
+                    if (current_state.is_player1) {
+                        ret += step_count * state_count;
+                    }
+                    continue;
+                }
+
+                tmp[next_state] += step_count * state_count;
             }
         }
 
-        m = tmp;
+        all_state = tmp;
     }
 
     return ret;
@@ -179,11 +164,11 @@ std::int64_t Part2(const Position &p) {
 void Test() {
     std::string input(R"(Player 1 starting position: 4
 Player 2 starting position: 8)");
-    auto position = ParseInput(input);
-    auto part1 = Part1(position);
+    const auto init_state = ParseInput(input);
+    auto part1 = Part1(init_state);
     assert(part1 == 739785);
 
-    auto part2 = Part2(position);
+    auto part2 = Part2(init_state);
     assert(part2 == 444356092776315);
 }
 
@@ -193,12 +178,14 @@ int main() {
     Test();
     std::string input(R"(Player 1 starting position: 4
 Player 2 starting position: 5)");
-    auto position = ParseInput(input);
-    auto part1 = Part1(position);
-    auto part2 = Part2(position);
+    const auto init_state = ParseInput(input);
+    auto part1 = Part1(init_state);
+    auto part2 = Part2(init_state);
 
     std::cout << "Part1: " << part1 << std::endl;
     std::cout << "Part2: " << part2 << std::endl;
 
+    assert(part1 == 864900);
+    assert(part2 == 575111835924670);
     return 0;
 }
