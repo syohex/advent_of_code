@@ -6,6 +6,7 @@
 #include <map>
 #include <tuple>
 #include <functional>
+#include <algorithm>
 
 namespace {
 
@@ -93,26 +94,19 @@ std::int64_t Part1(const GameState &init_state) {
 
 std::map<int, int> AllSteps() {
     std::map<int, int> ret;
-    std::function<void(std::vector<int> & acc)> f;
-    f = [&f, &ret](std::vector<int> &acc) {
-        if (acc.size() == 3) {
-            int sum = 0;
-            for (int i : acc) {
-                sum += i;
-            }
-            ++ret[sum];
+    std::function<void(int count, int acc)> f;
+    f = [&f, &ret](int count, int acc) {
+        if (count == 3) {
+            ++ret[acc];
             return;
         }
 
         for (int i = 1; i <= 3; ++i) {
-            acc.push_back(i);
-            f(acc);
-            acc.pop_back();
+            f(count + 1, acc + i);
         }
     };
 
-    std::vector<int> acc;
-    f(acc);
+    f(0, 0);
     return ret;
 }
 
@@ -123,7 +117,8 @@ std::int64_t Part2(const GameState &init_state) {
     all_state.insert({init_state, 1});
 
     constexpr int GOAL_SCORE = 21;
-    std::int64_t ret = 0;
+    std::int64_t player1_wins = 0;
+    std::int64_t player2_wins = 0;
     while (!all_state.empty()) {
         decltype(all_state) tmp;
         for (const auto &it : all_state) {
@@ -144,21 +139,25 @@ std::int64_t Part2(const GameState &init_state) {
                 }
 
                 player.score += player.position;
+
+                std::int64_t universes = step_count * state_count;
                 if (player.score >= GOAL_SCORE) {
                     if (current_state.is_player1) {
-                        ret += step_count * state_count;
+                        player1_wins += universes;
+                    } else {
+                        player2_wins += universes;
                     }
                     continue;
                 }
 
-                tmp[next_state] += step_count * state_count;
+                tmp[next_state] += universes;
             }
         }
 
         all_state = tmp;
     }
 
-    return ret;
+    return std::max(player1_wins, player2_wins);
 }
 
 void Test() {
