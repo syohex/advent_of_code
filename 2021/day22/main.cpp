@@ -101,7 +101,7 @@ struct Data {
         return ret;
     }
 
-    std::set<Data> SplitCubes(const Data &o) const {
+    std::set<Data> SplitCuboids(const Data &o) const {
         auto v1 = Volume();
         auto v2 = o.Volume();
         auto cross = CrossRegion(o);
@@ -216,18 +216,18 @@ size_t Part2(const std::vector<Data> &data, int region_size) {
 
             if (d.on) {
                 std::set<Data> new_regions;
-                for (const auto &k : remaining_regions) {
-                    auto cubes = k.SplitCubes(cuboid);
+                for (const auto &r : remaining_regions) {
+                    auto cubes = r.SplitCuboids(cuboid);
                     for (const auto &cube : cubes) {
                         new_regions.insert(cube);
                     }
                 }
                 remaining_regions = new_regions;
             } else {
-                auto cubes = d.SplitCubes(cuboid);
-                for (auto it = cubes.begin(); it != cubes.end();) {
+                auto new_cuboids = d.SplitCuboids(cuboid);
+                for (auto it = new_cuboids.begin(); it != new_cuboids.end();) {
                     if (d.Contain(*it)) {
-                        it = cubes.erase(it);
+                        it = new_cuboids.erase(it);
                     } else {
                         tmp.insert(*it);
                         ++it;
