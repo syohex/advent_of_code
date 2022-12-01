@@ -41,7 +41,21 @@ int problem1(const std::vector<std::vector<int>> &data) {
     return ret;
 }
 
-void test1() {
+int problem2(const std::vector<std::vector<int>> &data) {
+    std::vector<int> sums;
+    for (const auto &v : data) {
+        int sum = 0;
+        for (int num : v) {
+            sum += num;
+        }
+        sums.push_back(sum);
+    }
+
+    std::sort(sums.begin(), sums.end(), std::greater<int>{});
+    return sums[0] + sums[1] + sums[2];
+}
+
+void test() {
     std::string input_str = R"(1000
 2000
 3000
@@ -61,18 +75,23 @@ void test1() {
     std::vector<std::string> input;
     std::stringstream ss(input_str);
     const auto data = parse_input(ss);
-    int ret = problem1(data);
-    assert(ret == 24000);
+    int ret1 = problem1(data);
+    assert(ret1 == 24000);
+
+    int ret2 = problem2(data);
+    assert(ret2 == 45000);
 }
 
 int main() {
-    test1();
+    test();
 
     auto data = parse_input(std::cin);
 
-    int ret = problem1(data);
+    int ret1 = problem1(data);
+    int ret2 = problem2(data);
 
-    std::cout << "Problem1: " << ret << std::endl;
+    std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
 
     return 0;
 }
