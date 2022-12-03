@@ -46,6 +46,33 @@ int Problem1(const std::vector<std::string> &data) {
     return ret;
 }
 
+int Problem2(const std::vector<std::string> &data) {
+    int ret = 0;
+    int len = data.size();
+    for (int i = 0; i < len; i += 3) {
+        std::vector<std::vector<bool>> v(3, std::vector<bool>(128, false));
+        for (int j = 0; j < 3; ++j) {
+            const std::string &items = data[i + j];
+            for (char c : items) {
+                v[j][c] = true;
+            }
+        }
+
+        for (int j = 0; j < 128; ++j) {
+            if (v[0][j] && v[1][j] && v[2][j]) {
+                if (j >= 'a' && j <= 'z') {
+                    ret += j - 'a' + 1;
+                } else {
+                    ret += j - 'A' + 27;
+                }
+                break;
+            }
+        }
+    }
+
+    return ret;
+}
+
 void Test() {
     std::string input(R"(vJrwpWtwJgWrhcsFMMfFFhFp
 jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
@@ -57,8 +84,10 @@ CrZsJsPPZsGzwwsLwLmpwMDw)");
 
     auto data = ParseInput(ss);
     int ret1 = Problem1(data);
+    int ret2 = Problem2(data);
 
     assert(ret1 == 157);
+    assert(ret2 == 70);
 }
 
 int main() {
@@ -66,8 +95,10 @@ int main() {
 
     auto data = ParseInput(std::cin);
     int ret1 = Problem1(data);
+    int ret2 = Problem2(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
 
     return 0;
 }
