@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <algorithm>
 
 struct Data {
     int start1;
@@ -29,7 +30,7 @@ std::vector<Data> ParseInput(T &it) {
     return ret;
 }
 
-int Problem1(const std::vector<Data>& data) {
+int Problem1(const std::vector<Data> &data) {
     int ret = 0;
     for (const Data &d : data) {
         if ((d.start1 <= d.start2 && d.end2 <= d.end1) || (d.start2 <= d.start1 && d.end1 <= d.end2)) {
@@ -40,6 +41,20 @@ int Problem1(const std::vector<Data>& data) {
     return ret;
 }
 
+int Problem2(const std::vector<Data> &data) {
+    int ret = 0;
+
+    for (const Data &d : data) {
+        int start = std::max(d.start1, d.start2);
+        int end = std::min(d.end1, d.end2);
+
+        if (end >= start) {
+            ++ret;
+        }
+    }
+
+    return ret;
+}
 
 void Test() {
     std::string input(R"(2-4,6-8
@@ -52,8 +67,10 @@ void Test() {
     std::stringstream ss(input);
     auto data = ParseInput(ss);
     int ret1 = Problem1(data);
+    int ret2 = Problem2(data);
 
     assert(ret1 == 2);
+    assert(ret2 == 4);
 }
 
 int main() {
@@ -61,7 +78,9 @@ int main() {
 
     auto data = ParseInput(std::cin);
     int ret1 = Problem1(data);
+    int ret2 = Problem2(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
     return 0;
 }
