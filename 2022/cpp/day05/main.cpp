@@ -91,12 +91,35 @@ std::string Problem1(Data data) {
     return ret;
 }
 
+std::string Problem2(Data data) {
+    for (const Order &order : data.orders) {
+        std::vector<char> tmp;
+        for (int i = 0; i < order.moves; ++i) {
+            tmp.push_back(data.stacks[order.from - 1].back());
+            data.stacks[order.from - 1].pop_back();
+        }
+
+        for (auto it = tmp.rbegin(); it != tmp.rend(); ++it) {
+            data.stacks[order.to - 1].push_back(*it);
+        }
+    }
+
+    std::string ret;
+    for (const auto &stack : data.stacks) {
+        ret.push_back(stack.back());
+    }
+
+    return ret;
+}
+
 void Test() {
     std::ifstream is("test.txt");
     auto data = ParseInput(is);
     auto ret1 = Problem1(data);
+    auto ret2 = Problem2(data);
 
     assert(ret1 == "CMZ");
+    assert(ret2 == "MCD");
 }
 
 int main() {
@@ -104,7 +127,9 @@ int main() {
 
     auto data = ParseInput(std::cin);
     auto ret1 = Problem1(data);
+    auto ret2 = Problem2(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
     return 0;
 }
