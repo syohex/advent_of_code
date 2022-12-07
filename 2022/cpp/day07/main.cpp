@@ -6,6 +6,7 @@
 #include <memory>
 #include <cstring>
 #include <map>
+#include <algorithm>
 
 struct BaseFile {
     virtual ~BaseFile() = default;
@@ -121,6 +122,22 @@ size_t Problem1(const std::map<std::vector<std::string>, Directory *> data) {
     return ret;
 }
 
+size_t Problem2(const std::map<std::vector<std::string>, Directory *> data) {
+    size_t total = data.at({"/"})->Size();
+    size_t unused = 70000000 - total;
+    size_t need_space = 30000000 - unused;
+
+    size_t ret = 30000000;
+    for (const auto &it : data) {
+        size_t size = it.second->Size();
+        if (size >= need_space) {
+            ret = std::min(ret, size);
+        }
+    }
+
+    return ret;
+}
+
 void Test() {
     std::string input(R"($ cd /
 $ ls
@@ -149,7 +166,10 @@ $ ls
     std::stringstream ss(input);
     auto data = ParseInput(ss);
     size_t ret1 = Problem1(data);
+    size_t ret2 = Problem2(data);
+
     assert(ret1 == 95437);
+    assert(ret2 == 24933642);
 
     delete data[{"/"}];
 }
@@ -160,8 +180,10 @@ int main() {
     auto data = ParseInput(std::cin);
 
     int ret1 = Problem1(data);
+    int ret2 = Problem2(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
 
     delete data[{"/"}];
     return 0;
