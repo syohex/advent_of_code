@@ -134,7 +134,7 @@ int Problem2(const std::vector<std::vector<int>> &data) {
                     break;
                 }
 
-                if (k != rows -1) {
+                if (k != rows - 1) {
                     ++down_trees;
                 }
             }
