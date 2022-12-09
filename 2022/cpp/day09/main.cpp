@@ -7,52 +7,6 @@
 #include <cstring>
 #include <cmath>
 
-enum class Direction {
-    kRight,
-    kUp,
-    kDown,
-    kLeft,
-};
-
-struct Step {
-    Direction direction;
-    int steps;
-};
-
-template <typename T>
-std::vector<Step> ParseInput(T &it) {
-    std::vector<Step> ret;
-    std::string tmp;
-    while (std::getline(it, tmp)) {
-        char c;
-        int steps;
-
-        sscanf(tmp.c_str(), "%c %d", &c, &steps);
-
-        Direction dir;
-        switch (c) {
-        case 'R':
-            dir = Direction::kRight;
-            break;
-        case 'U':
-            dir = Direction::kUp;
-            break;
-        case 'D':
-            dir = Direction::kDown;
-            break;
-        case 'L':
-            dir = Direction::kLeft;
-            break;
-        default:
-            assert(!"never reach here");
-        }
-
-        ret.push_back({dir, steps});
-    }
-
-    return ret;
-}
-
 enum class MoveDirection {
     kLeftUp,
     kUp,
@@ -65,44 +19,96 @@ enum class MoveDirection {
     kRightDown,
 };
 
-bool isTouching(int h_row, int h_col, int t_row, int t_col) {
-    int row_diff = std::abs(h_row - t_row);
-    int col_diff = std::abs(h_col - t_col);
+struct Step {
+    MoveDirection direction;
+    int steps;
+};
+
+struct Position {
+    int row;
+    int col;
+
+    bool operator<(const Position &other) const {
+        if (row == other.row) {
+            return col < other.col;
+        }
+
+        return row < other.row;
+    }
+};
+
+template <typename T>
+std::vector<Step> ParseInput(T &it) {
+    std::vector<Step> ret;
+    std::string tmp;
+    while (std::getline(it, tmp)) {
+        char c;
+        int steps;
+
+        sscanf(tmp.c_str(), "%c %d", &c, &steps);
+
+        MoveDirection dir;
+        switch (c) {
+        case 'R':
+            dir = MoveDirection::kRight;
+            break;
+        case 'U':
+            dir = MoveDirection::kUp;
+            break;
+        case 'D':
+            dir = MoveDirection::kDown;
+            break;
+        case 'L':
+            dir = MoveDirection::kLeft;
+            break;
+        default:
+            assert(!"never reach here");
+        }
+
+        ret.push_back({dir, steps});
+    }
+
+    return ret;
+}
+
+bool isTouching(const Position &a, const Position &b) {
+    int row_diff = std::abs(a.row - b.row);
+    int col_diff = std::abs(a.col - b.col);
     int diff = row_diff * row_diff + col_diff * col_diff;
     return diff <= 2;
 }
 
-MoveDirection HowMove(int h_row, int h_col, int t_row, int t_col) {
-    if (isTouching(h_row, h_col, t_row, t_col)) {
+MoveDirection HowMove(const Position &a, const Position &b) {
+    if (isTouching(a, b)) {
         return MoveDirection::kStay;
     }
 
-    if (h_row == t_row) {
-        if (h_col > t_col) {
+    if (a.row == b.row) {
+        if (a.col > b.col) {
             return MoveDirection::kRight;
         }
 
         return MoveDirection::kLeft;
     }
 
-    if (h_col == t_col) {
-        if (h_row > t_row) {
+    if (a.col == b.col) {
+        if (a.row > b.row) {
             return MoveDirection::kDown;
         }
 
         return MoveDirection::kUp;
     }
 
-    if (h_col < t_col) {
-        if (h_row < t_row) {
+    if (a.col < b.col) {
+        if (a.row < b.row) {
             return MoveDirection::kLeftUp;
         }
 
         return MoveDirection::kLeftDown;
     }
 
-    if (h_col > t_col) {
-        if (h_row < t_row) {
+    if (a.col > b.col) {
+        if (a.row < b.row) {
             return MoveDirection::kRightUp;
         }
 
@@ -112,100 +118,56 @@ MoveDirection HowMove(int h_row, int h_col, int t_row, int t_col) {
     assert(!"never reach here");
 }
 
-void MoveKnot(MoveDirection direction, int &row, int &col) {
+void MoveKnot(MoveDirection direction, Position &p) {
     switch (direction) {
     case MoveDirection::kLeftUp:
-        row -= 1;
-        col -= 1;
+        p.row -= 1;
+        p.col -= 1;
         break;
     case MoveDirection::kUp:
-        row -= 1;
+        p.row -= 1;
         break;
     case MoveDirection::kRightUp:
-        row -= 1;
-        col += 1;
+        p.row -= 1;
+        p.col += 1;
         break;
     case MoveDirection::kLeft:
-        col -= 1;
+        p.col -= 1;
         break;
     case MoveDirection::kStay:
         break;
     case MoveDirection::kRight:
-        col += 1;
+        p.col += 1;
         break;
     case MoveDirection::kLeftDown:
-        row += 1;
-        col -= 1;
+        p.row += 1;
+        p.col -= 1;
         break;
     case MoveDirection::kDown:
-        row += 1;
+        p.row += 1;
         break;
     case MoveDirection::kRightDown:
-        row += 1;
-        col += 1;
+        p.row += 1;
+        p.col += 1;
         break;
     }
 }
 
 size_t Problem1(const std::vector<Step> &data) {
-    int h_row = 0, h_col = 0;
-    int t_row = 0, t_col = 0;
+    Position head{0, 0};
+    Position tail{0, 0};
 
-    std::set<std::pair<int, int>> visited;
-    visited.insert({0, 0});
+    std::set<Position> visited;
+    visited.insert(tail);
 
     for (const auto &step : data) {
         for (int i = 0; i < step.steps; ++i) {
-            switch (step.direction) {
-            case Direction::kRight:
-                h_col += 1;
-                break;
-            case Direction::kDown:
-                h_row += 1;
-                break;
-            case Direction::kLeft:
-                h_col -= 1;
-                break;
-            case Direction::kUp:
-                h_row -= 1;
-                break;
-            }
+            MoveKnot(step.direction, head);
 
-            MoveDirection md = HowMove(h_row, h_col, t_row, t_col);
-            switch (md) {
-            case MoveDirection::kLeftUp:
-                t_row -= 1;
-                t_col -= 1;
-                break;
-            case MoveDirection::kUp:
-                t_row -= 1;
-                break;
-            case MoveDirection::kRightUp:
-                t_row -= 1;
-                t_col += 1;
-                break;
-            case MoveDirection::kLeft:
-                t_col -= 1;
-                break;
-            case MoveDirection::kStay:
-                break;
-            case MoveDirection::kRight:
-                t_col += 1;
-                break;
-            case MoveDirection::kLeftDown:
-                t_row += 1;
-                t_col -= 1;
-                break;
-            case MoveDirection::kDown:
-                t_row += 1;
-                break;
-            case MoveDirection::kRightDown:
-                t_row += 1;
-                t_col += 1;
-                break;
-            }
+            MoveDirection direction = HowMove(head, tail);
+            MoveKnot(direction, tail);
 
-            visited.insert({t_row, t_col});
+            visited.insert(tail);
         }
     }
 
@@ -213,34 +175,21 @@ size_t Problem1(const std::vector<Step> &data) {
 }
 
 size_t Problem2(const std::vector<Step> &data) {
-    std::vector<std::pair<int, int>> ropes(10, {0, 0});
+    std::vector<Position> ropes(10, {0, 0});
 
-    std::set<std::pair<int, int>> visited;
-    visited.insert({ropes[9].first, ropes[9].second});
+    std::set<Position> visited;
+    visited.insert(ropes[9]);
 
     for (const auto &step : data) {
         for (int i = 0; i < step.steps; ++i) {
-            switch (step.direction) {
-            case Direction::kRight:
-                ropes[0].second += 1;
-                break;
-            case Direction::kDown:
-                ropes[0].first += 1;
-                break;
-            case Direction::kLeft:
-                ropes[0].second -= 1;
-                break;
-            case Direction::kUp:
-                ropes[0].first -= 1;
-                break;
-            }
+            MoveKnot(step.direction, ropes[0]);
 
             for (size_t i = 1; i < 10; ++i) {
-                MoveDirection dir = HowMove(ropes[i - 1].first, ropes[i - 1].second, ropes[i].first, ropes[i].second);
-                MoveKnot(dir, ropes[i].first, ropes[i].second);
+                MoveDirection dir = HowMove(ropes[i - 1], ropes[i]);
+                MoveKnot(dir, ropes[i]);
             }
 
-            visited.insert({ropes[9].first, ropes[9].second});
+            visited.insert(ropes[9]);
         }
     }
 
