@@ -112,6 +112,41 @@ MoveDirection HowMove(int h_row, int h_col, int t_row, int t_col) {
     assert(!"never reach here");
 }
 
+void MoveKnot(MoveDirection direction, int &row, int &col) {
+    switch (direction) {
+    case MoveDirection::kLeftUp:
+        row -= 1;
+        col -= 1;
+        break;
+    case MoveDirection::kUp:
+        row -= 1;
+        break;
+    case MoveDirection::kRightUp:
+        row -= 1;
+        col += 1;
+        break;
+    case MoveDirection::kLeft:
+        col -= 1;
+        break;
+    case MoveDirection::kStay:
+        break;
+    case MoveDirection::kRight:
+        col += 1;
+        break;
+    case MoveDirection::kLeftDown:
+        row += 1;
+        col -= 1;
+        break;
+    case MoveDirection::kDown:
+        row += 1;
+        break;
+    case MoveDirection::kRightDown:
+        row += 1;
+        col += 1;
+        break;
+    }
+}
+
 size_t Problem1(const std::vector<Step> &data) {
     int h_row = 0, h_col = 0;
     int t_row = 0, t_col = 0;
@@ -177,6 +212,41 @@ size_t Problem1(const std::vector<Step> &data) {
     return visited.size();
 }
 
+size_t Problem2(const std::vector<Step> &data) {
+    std::vector<std::pair<int, int>> ropes(10, {0, 0});
+
+    std::set<std::pair<int, int>> visited;
+    visited.insert({ropes[9].first, ropes[9].second});
+
+    for (const auto &step : data) {
+        for (int i = 0; i < step.steps; ++i) {
+            switch (step.direction) {
+            case Direction::kRight:
+                ropes[0].second += 1;
+                break;
+            case Direction::kDown:
+                ropes[0].first += 1;
+                break;
+            case Direction::kLeft:
+                ropes[0].second -= 1;
+                break;
+            case Direction::kUp:
+                ropes[0].first -= 1;
+                break;
+            }
+
+            for (size_t i = 1; i < 10; ++i) {
+                MoveDirection dir = HowMove(ropes[i - 1].first, ropes[i - 1].second, ropes[i].first, ropes[i].second);
+                MoveKnot(dir, ropes[i].first, ropes[i].second);
+            }
+
+            visited.insert({ropes[9].first, ropes[9].second});
+        }
+    }
+
+    return visited.size();
+}
+
 void Test() {
     std::string input(R"(R 4
 U 4
@@ -189,8 +259,24 @@ R 2)");
     std::stringstream ss(input);
     auto data = ParseInput(ss);
     size_t ret1 = Problem1(data);
+    size_t ret2 = Problem2(data);
 
     assert(ret1 == 13);
+    assert(ret2 == 1);
+
+    std::string input2(R"(R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20)");
+
+    std::stringstream ss2(input2);
+    auto data2 = ParseInput(ss2);
+    size_t ret2_2 = Problem2(data2);
+    assert(ret2_2 == 36);
 }
 
 int main() {
@@ -198,7 +284,9 @@ int main() {
 
     auto data = ParseInput(std::cin);
     size_t ret1 = Problem1(data);
+    size_t ret2 = Problem2(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
     return 0;
 }
