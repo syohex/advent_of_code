@@ -67,12 +67,67 @@ int Problem1(const std::vector<Instruction> &insns) {
     return ret;
 }
 
+void Problem2(const std::vector<Instruction> &insns) {
+    int clock = 0;
+    std::vector<std::vector<char>> crt(6, std::vector<char>(40, '.'));
+    int row = 0;
+    int col = 0;
+    int sprite_pos = 0;
+
+    for (const auto &insn : insns) {
+        if (insn.type == InstructionType::kNoop) {
+            if (col >= sprite_pos && col < sprite_pos + 3) {
+                crt[row][col] = '#';
+            }
+
+            clock += 1;
+            col += 1;
+            if (clock % 40 == 0) {
+                row += 1;
+                col = 0;
+            }
+        } else {
+            if (col >= sprite_pos && col < sprite_pos + 3) {
+                crt[row][col] = '#';
+            }
+
+            clock += 1;
+            col += 1;
+            if (clock % 40 == 0) {
+                row += 1;
+                col = 0;
+            }
+
+            clock += 1;
+            if (col >= sprite_pos && col < sprite_pos + 3) {
+                crt[row][col] = '#';
+            }
+            sprite_pos += insn.val;
+            col += 1;
+
+            if (clock % 40 == 0) {
+                row += 1;
+                col = 0;
+            }
+        }
+    }
+
+    for (const auto &row : crt) {
+        for (char c : row) {
+            printf("%c", c);
+        }
+        printf("\n");
+    }
+}
+
 void Test() {
     std::ifstream fs("test.txt");
     auto data = ParseInput(fs);
 
     int ret1 = Problem1(data);
     assert(ret1 == 13140);
+
+    Problem2(data);
 }
 
 int main() {
@@ -82,5 +137,7 @@ int main() {
     int ret1 = Problem1(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+
+    Problem2(data);
     return 0;
 }
