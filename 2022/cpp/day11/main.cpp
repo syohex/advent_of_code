@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <functional>
 #include <algorithm>
+#include <numeric>
 
 struct TestInfo {
     int64_t divisor;
@@ -142,6 +143,40 @@ int64_t Problem1(const std::vector<Monkey> &data, int turns) {
     return inspects[0] * inspects[1];
 }
 
+int64_t Problem2(const std::vector<Monkey> &data, int turns) {
+    auto monkeys = data;
+    int64_t lcm = 1;
+    for (const auto &m : monkeys) {
+        lcm = std::lcm(lcm, m.test_info.divisor);
+    }
+
+    for (int i = 0; i < turns; ++i) {
+        for (auto &monkey : monkeys) {
+            size_t len = monkey.items.size();
+            monkey.inspects += len;
+            for (size_t j = 0; j < len; ++j) {
+                int64_t item = monkey.items.front();
+                monkey.items.pop_front();
+
+                int64_t new_level = monkey.operation(item) % lcm;
+                if (new_level % monkey.test_info.divisor == 0) {
+                    monkeys[monkey.test_info.true_id].items.push_back(new_level);
+                } else {
+                    monkeys[monkey.test_info.false_id].items.push_back(new_level);
+                }
+            }
+        }
+    }
+
+    std::vector<int64_t> inspects;
+    for (const auto &monkey : monkeys) {
+        inspects.push_back(monkey.inspects);
+    }
+
+    std::sort(inspects.begin(), inspects.end(), std::greater<int>{});
+    return inspects[0] * inspects[1];
+}
+
 void Test() {
     std::string input(R"(Monkey 0:
   Starting items: 79, 98
@@ -176,6 +211,9 @@ Monkey 3:
 
     auto ret1 = Problem1(data, 20);
     assert(ret1 == 10605);
+
+    auto ret2 = Problem2(data, 10000);
+    assert(ret2 == 2713310158);
 }
 
 int main() {
@@ -183,7 +221,9 @@ int main() {
 
     auto data = ParseInput(std::cin);
     auto ret1 = Problem1(data, 20);
+    auto ret2 = Problem2(data, 10000);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
     return 0;
 }
