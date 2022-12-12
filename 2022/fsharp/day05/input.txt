@@ -1,0 +1,1 @@
+../../cpp/day05/input.txt
