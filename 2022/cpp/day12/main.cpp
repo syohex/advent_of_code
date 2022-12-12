@@ -40,21 +40,15 @@ struct Pos {
     }
 };
 
-int Problem1(const std::vector<std::vector<char>> &data) {
+int Solve(int row, int col, const std::vector<std::vector<char>> &data) {
     int rows = data.size();
     int cols = data[0].size();
 
     std::vector<std::vector<int>> min_steps(rows, std::vector<int>(cols, rows * cols + 1));
+    min_steps[row][col] = 0;
+
     std::queue<Pos> q;
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            if (data[i][j] == 'S') {
-                q.push({i, j, 0});
-                min_steps[i][j] = 0;
-                break;
-            }
-        }
-    }
+    q.push({row, col, 0});
 
     std::vector<std::pair<int, int>> steps{{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
     int ret = std::numeric_limits<int>::max();
@@ -95,6 +89,43 @@ int Problem1(const std::vector<std::vector<char>> &data) {
     return ret;
 }
 
+int Problem1(const std::vector<std::vector<char>> &data) {
+    int rows = data.size();
+    int cols = data[0].size();
+
+    std::queue<Pos> q;
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            if (data[i][j] == 'S') {
+                return Solve(i, j, data);
+            }
+        }
+    }
+
+    return -1;
+}
+
+int Problem2(const std::vector<std::vector<char>> &data) {
+    int rows = data.size();
+    int cols = data[0].size();
+
+    std::vector<std::vector<int>> min_steps(rows, std::vector<int>(cols, rows * cols + 1));
+    std::vector<std::pair<int, int>> candidates;
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            if (data[i][j] == 'a') {
+                candidates.push_back({i, j});
+            }
+        }
+    }
+
+    int ret = std::numeric_limits<int>::max();
+    for (const auto &cand : candidates) {
+        ret = std::min(ret, Solve(cand.first, cand.second, data));
+    }
+    return ret;
+}
+
 void Test() {
     std::string input(R"(Sabqponm
 abcryxxl
@@ -106,6 +137,9 @@ abdefghi)");
 
     auto ret1 = Problem1(data);
     assert(ret1 == 31);
+
+    auto ret2 = Problem2(data);
+    assert(ret2 == 29);
 }
 
 int main() {
@@ -113,7 +147,9 @@ int main() {
 
     auto data = ParseInput(std::cin);
     auto ret1 = Problem1(data);
+    auto ret2 = Problem2(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
     return 0;
 }
