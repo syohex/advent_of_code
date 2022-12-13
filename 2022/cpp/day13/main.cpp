@@ -206,12 +206,50 @@ int Problem1(const std::vector<std::pair<Element *, Element *>> &data) {
     return ret;
 }
 
+int Problem2(const std::vector<std::pair<Element *, Element *>> &data) {
+    struct Data {
+        Element *element;
+        bool mark;
+    };
+
+    std::vector<Data> v;
+    for (auto &p : data) {
+        v.push_back({p.first, false});
+        v.push_back({p.second, false});
+    }
+
+    ListElement divisor1;
+    divisor1.AddElement(new ValueElement(2));
+    v.push_back({&divisor1, true});
+
+    ListElement divisor2;
+    divisor2.AddElement(new ValueElement(6));
+    v.push_back({&divisor2, true});
+
+    const auto cmp = [](const Data &a, const Data &b) { return a.element->Compare(b.element) == Result::kWin; };
+
+    std::sort(v.begin(), v.end(), cmp);
+
+    int ret = 1;
+    int len = v.size();
+    for (int i = 0; i < len; ++i) {
+        if (v[i].mark) {
+            ret *= (i + 1);
+        }
+    }
+
+    return ret;
+}
+
 void Test() {
     std::ifstream fs("test.txt");
     auto data = ParseInput(fs);
 
     int ret1 = Problem1(data);
     assert(ret1 == 13);
+
+    int ret2 = Problem2(data);
+    assert(ret2 == 140);
 
     for (auto &p : data) {
         delete p.first;
@@ -225,8 +263,10 @@ int main() {
     std::ifstream fs("input.txt");
     auto data = ParseInput(fs);
     int ret1 = Problem1(data);
+    int ret2 = Problem2(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
 
     for (auto &p : data) {
         delete p.first;
