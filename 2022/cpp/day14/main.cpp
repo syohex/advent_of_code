@@ -123,10 +123,9 @@ int Problem1(const std::set<Pos> &tiles) {
 
     int row = 0;
     int col = 500;
-    int sands = 1;
+    int sands = 0;
     while (true) {
         NextAction action = CheckCollision(row, col, blocks);
-        // printf("## %d, %d => %d\n", row, col, static_cast<int>(action));
         switch (action) {
         case NextAction::kDown:
             row += 1;
@@ -155,7 +154,71 @@ int Problem1(const std::set<Pos> &tiles) {
         }
     }
 
-    return sands - 1;
+    return sands;
+}
+
+NextAction CheckCollision2(int row, int col, int floor_row, const std::set<Pos> &blocks) {
+    if (row + 1 == floor_row) {
+        return NextAction::kStop;
+    }
+
+    if (blocks.find({row + 1, col}) == blocks.end()) {
+        return NextAction::kDown;
+    }
+
+    if (blocks.find({row + 1, col - 1}) == blocks.end()) {
+        return NextAction::kLeftDown;
+    }
+
+    if (blocks.find({row + 1, col + 1}) == blocks.end()) {
+        return NextAction::kRightDown;
+    }
+
+    return NextAction::kStop;
+}
+
+int Problem2(const std::set<Pos> &tiles) {
+    std::set<Pos> blocks = tiles;
+    int max_row = -1;
+    for (const Pos &p : blocks) {
+        max_row = std::max(max_row, p.row);
+    }
+    int floor_row = max_row + 2;
+
+    int row = 0;
+    int col = 500;
+    int sands = 0;
+    while (true) {
+        if (blocks.find({0, 500, false}) != blocks.end()) {
+            break;
+        }
+
+        NextAction action = CheckCollision2(row, col, floor_row, blocks);
+        switch (action) {
+        case NextAction::kDown:
+            row += 1;
+            break;
+        case NextAction::kLeftDown:
+            row += 1;
+            col -= 1;
+            break;
+        case NextAction::kRightDown:
+            row += 1;
+            col += 1;
+            break;
+        case NextAction::kStop:
+            assert(blocks.find({row, col, false}) == blocks.end());
+
+            ++sands;
+            blocks.insert({row, col, false});
+
+            row = 0;
+            col = 500;
+            break;
+        }
+    }
+
+    return sands;
 }
 
 void Test() {
@@ -166,6 +229,9 @@ void Test() {
     auto data = ParseInput(ss);
     int ret1 = Problem1(data);
     assert(ret1 == 24);
+
+    int ret2 = Problem2(data);
+    assert(ret2 == 93);
 }
 
 int main() {
@@ -174,7 +240,9 @@ int main() {
     auto data = ParseInput(std::cin);
 
     int ret1 = Problem1(data);
+    int ret2 = Problem2(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
     return 0;
 }
