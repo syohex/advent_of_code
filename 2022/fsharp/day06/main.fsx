@@ -1,20 +1,12 @@
 open System.IO
 
 let findFirstMarker (s: string) (n: int) : int =
-    let differentCharacters = Set.ofList >> Set.toList >> List.length
-
-    let rec findFirstMarker' cs i n len =
-        if i + n >= len then
-            failwith "Could not find marker"
-        else
-            let count = cs |> List.take n |> differentCharacters
-
-            if count = n then
-                i + n
-            else
-                findFirstMarker' (List.tail cs) (i + 1) n len
-
-    findFirstMarker' (s |> Seq.toList) 0 n s.Length
+    s
+    |> Seq.windowed n
+    |> Seq.indexed
+    |> Seq.find (fun (_, cs) -> cs |> Seq.distinct |> (fun ds -> Seq.length ds = n))
+    |> fst
+    |> (fun index -> index + n)
 
 // 7
 findFirstMarker "mjqjpqmgbljsphdztnvjfqwrcgsmlb" 4
