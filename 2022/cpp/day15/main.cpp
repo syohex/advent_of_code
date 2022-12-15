@@ -8,6 +8,7 @@
 #include <map>
 #include <cmath>
 #include <algorithm>
+#include <limits>
 
 struct Sensor {
     int row;
@@ -34,56 +35,68 @@ std::vector<Sensor> ParseInput(T &it) {
     return ret;
 }
 
-struct Line {
+struct Range {
     int start;
     int end;
+
+    bool operator<(const Range &other) const {
+        if (start == other.start) {
+            return end < other.end;
+        }
+
+        return start < other.start;
+    }
 };
 
-int Problem1(const std::vector<Sensor> &data, int row) {
-    std::map<int, std::vector<Line>> not_exist;
-
-    for (const auto &sensor : data) {
+std::map<int, std::vector<Range>> FindNonBeaconRanges(const std::vector<Sensor> &sensors) {
+    std::map<int, std::vector<Range>> non_beacon_range;
+    for (const auto &sensor : sensors) {
         int distance = sensor.BeaconDistance();
         for (int row = sensor.row - distance; row <= sensor.row + distance; ++row) {
             int d = std::abs(row - sensor.row);
             int len = std::abs(distance - d);
-            not_exist[row].push_back({sensor.col - len, sensor.col + len});
+            non_beacon_range[row].push_back({sensor.col - len, sensor.col + len});
         }
     }
 
-    const auto cmp = [](const Line &a, const Line &b) {
-        if (a.start == b.start) {
-            return a.end < b.end;
+    std::map<int, std::vector<Range>> ret;
+    for (const auto &it : non_beacon_range) {
+        int row = it.first;
+        std::vector<Range> ranges = it.second;
+        std::sort(ranges.begin(), ranges.end());
+
+        std::vector<Range> optimized_ranges;
+        int range_start = ranges[0].start;
+        int range_end = ranges[0].end;
+
+        for (size_t i = 1; i < ranges.size(); ++i) {
+            if (ranges[i].start <= range_end + 1) {
+                range_end = std::max(range_end, ranges[i].end);
+            } else {
+                optimized_ranges.push_back({range_start, range_end});
+                range_start = ranges[i].start;
+                range_end = ranges[i].end;
+            }
         }
 
-        return a.start < b.start;
-    };
-
-    auto lines = not_exist[row];
-    std::sort(lines.begin(), lines.end(), cmp);
-
-    int len = lines.size();
-    int range_start = lines[0].start;
-    int range_end = lines[0].end;
-
-    std::vector<Line> ranges;
-    for (int i = 1; i < len; ++i) {
-        if (lines[i].start <= range_end) {
-            range_end = std::max(range_end, lines[i].end);
-        } else {
-            ranges.push_back({range_start, range_end});
-            range_start = lines[i].start;
-            range_end = lines[i].end;
-        }
+        optimized_ranges.push_back({range_start, range_end});
+        ret[row] = optimized_ranges;
     }
-    ranges.push_back({range_start, range_end});
+
+    return ret;
+}
+
+int Problem1(const std::vector<Sensor> &sensors, int row) {
+    const auto non_beacon_range = FindNonBeaconRanges(sensors);
 
     std::set<int> beacon_cols;
-    for (const auto &sensor : data) {
+    for (const auto &sensor : sensors) {
         if (sensor.beacon_row == row) {
             beacon_cols.insert(sensor.beacon_col);
         }
     }
+
+    const std::vector<Range> &ranges = non_beacon_range.at(row);
 
     int ret = 0;
     for (const auto &range : ranges) {
@@ -100,6 +113,39 @@ int Problem1(const std::vector<Sensor> &data, int row) {
     }
 
     return ret;
+}
+
+std::int64_t Problem2(const std::vector<Sensor> &sensors) {
+    const auto non_beacon_range = FindNonBeaconRanges(sensors);
+
+    int max_sensor_row = std::numeric_limits<int>::min();
+    int max_sensor_col = std::numeric_limits<int>::min();
+    for (const auto &sensor : sensors) {
+        max_sensor_row = std::max(max_sensor_row, sensor.row);
+        max_sensor_col = std::max(max_sensor_col, sensor.col);
+    }
+
+    for (const auto &it : non_beacon_range) {
+        int row = it.first;
+        const auto &ranges = it.second;
+        if (row < 0 || row > max_sensor_row) {
+            continue;
+        }
+        if (ranges.size() < 2) {
+            continue;
+        }
+
+        for (const auto &range : ranges) {
+            if (range.start <= 0 && range.end >= max_sensor_col) {
+                continue;
+            }
+
+            return (static_cast<int64_t>(range.end + 1) * 4000000) + row;
+        }
+    }
+
+    // never reach here
+    return std::numeric_limits<int>::min();
 }
 
 void Test() {
@@ -121,7 +167,9 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3)");
     std::stringstream ss(input);
     auto data = ParseInput(ss);
     int ret1 = Problem1(data, 10);
+    auto ret2 = Problem2(data);
     assert(ret1 == 26);
+    assert(ret2 == 56000011);
 }
 
 int main() {
@@ -129,7 +177,9 @@ int main() {
 
     auto data = ParseInput(std::cin);
     int ret1 = Problem1(data, 2000000);
+    auto ret2 = Problem2(data);
 
     std::cout << "Problem1: " << ret1 << std::endl;
+    std::cout << "Problem2: " << ret2 << std::endl;
     return 0;
 }
