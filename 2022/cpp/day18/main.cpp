@@ -105,13 +105,26 @@ bool CanMoveOut(int x, int y, int z, const AreaInfo &ai, const std::set<Position
     return false;
 }
 
-bool IsTrapped(int x, int y, int z, const AreaInfo &ai, const std::set<Position> &positions) {
+bool IsTrapped(int x, int y, int z, const AreaInfo &ai, const std::set<Position> &positions, std::set<Position> &cache) {
     if (positions.find({x, y, z}) != positions.end()) {
         return false;
     }
 
+    if (cache.find({x, y, z}) != cache.end()) {
+        return true;
+    }
+
     std::set<Position> visited;
-    return !CanMoveOut(x, y, z, ai, positions, visited);
+    bool canMoveOut = CanMoveOut(x, y, z, ai, positions, visited);
+    if (canMoveOut) {
+        return false;
+    }
+
+    for (const auto &p : visited) {
+        cache.insert(p);
+    }
+
+    return true;
 }
 
 int Problem2(const std::vector<Position> &positions) {
@@ -132,12 +145,13 @@ int Problem2(const std::vector<Position> &positions) {
         ai.max_z = std::max(ai.max_z, p.z);
     }
 
+    std::set<Position> cache;
     std::set<Position> ps(positions.begin(), positions.end());
     std::vector<Position> trapped;
     for (int x = ai.min_x; x <= ai.max_x; ++x) {
         for (int y = ai.min_y; y <= ai.max_y; ++y) {
             for (int z = ai.min_z; z <= ai.max_z; ++z) {
-                if (IsTrapped(x, y, z, ai, ps)) {
+                if (IsTrapped(x, y, z, ai, ps, cache)) {
                     trapped.push_back({x, y, z});
                 }
             }
