@@ -76,6 +76,84 @@ let findNumbers (engine: char[,]) : int list =
 let problem1 (input: string list) : int =
     input |> parseInput |> findNumbers |> List.sum
 
+let detectNumberLocation
+    (row: int)
+    (col: int)
+    (engine: char[,])
+    (visited: Set<(int * int)>)
+    : (int * Set<(int * int)>) =
+    let rec startPos col =
+        if col < 0 then
+            0
+        else if Char.IsNumber(engine.[row, col]) then
+            startPos (col - 1)
+        else
+            col + 1
+
+    let rec endPos col =
+        if col >= Array2D.length2 engine then
+            col - 1
+        else if Char.IsNumber(engine.[row, col]) then
+            endPos (col + 1)
+        else
+            col - 1
+
+    let s, e = startPos col, endPos col
+    let num = extractNumber row s e engine
+    let visited' = seq { s..e } |> Seq.fold (fun acc i -> Set.add (row, i) acc) visited
+    num, visited'
+
+let findTwoNumbers (row: int) (col: int) (engine: char[,]) : Option<(int * int)> =
+    let minRow = Math.Max(0, row - 1)
+    let maxRow = Math.Min(Array2D.length1 engine - 1, row + 1)
+    let minCol = Math.Max(0, col - 1)
+    let maxCol = Math.Min(Array2D.length2 engine - 1, col + 1)
+
+    let rec findTwoNumbers' row col visited first second =
+        if row > maxRow then
+            match first, second with
+            | Some(a), Some(b) -> Some((a, b))
+            | _ -> None
+        elif col > maxCol then
+            findTwoNumbers' (row + 1) minCol visited first second
+        elif Set.contains (row, col) visited then
+            findTwoNumbers' row (col + 1) visited first second
+        else if Char.IsNumber(engine.[row, col]) then
+            let num, visited' = detectNumberLocation row col engine visited
+
+            if Option.isNone first then
+                findTwoNumbers' row (col + 1) visited' (Some(num)) second
+            else
+                findTwoNumbers' row (col + 1) visited' first (Some(num))
+        else
+            findTwoNumbers' row (col + 1) visited first second
+
+    findTwoNumbers' minRow minCol Set.empty None None
+
+let findGearNumbers (engine: char[,]) : (int * int) list =
+    let rows, cols = Array2D.length1 engine, Array2D.length2 engine
+
+    let rec findGearNumbers row col acc =
+        if row >= rows then
+            List.rev acc
+        elif col >= cols then
+            findGearNumbers (row + 1) 0 acc
+        else if engine.[row, col] = '*' then
+            match findTwoNumbers row col engine with
+            | Some((a, b)) -> findGearNumbers row (col + 1) ((a, b) :: acc)
+            | None -> findGearNumbers row (col + 1) acc
+        else
+            findGearNumbers row (col + 1) acc
+
+    findGearNumbers 0 0 []
+
+let problem2 (input: string list) : int64 =
+    input
+    |> parseInput
+    |> findGearNumbers
+    |> List.map (fun (a, b) -> int64 a * int64 b)
+    |> List.sum
+
 let test1 () : int =
     let input =
         [ "467..114.."
@@ -89,12 +167,32 @@ let test1 () : int =
           "...$.*...."
           ".664.598.." ]
 
-    let a = input |> parseInput |> findNumbers
-    printfn "## %A" a
-    a |> List.sum
+    problem1 input
+
+let test2 () : int64 =
+    let input =
+        [ "467..114.."
+          "...*......"
+          "..35..633."
+          "......#..."
+          "617*......"
+          ".....+.58."
+          "..592....."
+          "......755."
+          "...$.*...."
+          ".664.598.." ]
+
+    problem2 input
 
 // 4361
 test1 ()
 
+// 467835
+test2 ()
+
 let input = readInput "../input.txt"
+// 537832
 problem1 input
+
+// 81939900
+problem2 input
