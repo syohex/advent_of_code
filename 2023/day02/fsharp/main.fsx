@@ -1,3 +1,4 @@
+open System
 open System.IO
 
 type Bag =
@@ -42,6 +43,26 @@ let problem01 (input: string list) : int =
     |> List.map (fun (i, _) -> i + 1)
     |> List.sum
 
+let minimumBag (bags: Bag list) : Bag =
+    let rec minimumBag' bags acc =
+        match bags with
+        | [] -> acc
+        | h :: t ->
+            minimumBag'
+                t
+                { Red = Math.Max(h.Red, acc.Red)
+                  Green = Math.Max(h.Green, acc.Green)
+                  Blue = Math.Max(h.Blue, acc.Blue) }
+
+    minimumBag' bags (Bag.init ())
+
+let problem02 (input: string list) : int =
+    input
+    |> List.map parseLine
+    |> List.map minimumBag
+    |> List.map (fun bag -> bag.Red * bag.Green * bag.Blue)
+    |> List.sum
+
 let test1 () : int =
     let input =
         [ "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
@@ -52,8 +73,25 @@ let test1 () : int =
 
     problem01 input
 
+let test2 () : int =
+    let input =
+        [ "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
+          "Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue"
+          "Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red"
+          "Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red"
+          "Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green" ]
+
+    problem02 input
+
 // 8
 test1 ()
 
+// 2286
+test2 ()
+
 let input = readInput "../input.txt"
+// 2685
 problem01 input
+
+// 83707
+problem02 input
