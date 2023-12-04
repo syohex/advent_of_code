@@ -25,23 +25,68 @@ let parseLine (s: string) : Data =
     { WinningNumber = winNums
       Cards = cards }
 
-let calculatePoint (d: Data) : int64 =
-    let rec calculatePoint' nums wins (acc: int64) =
+let calculatePoint (d: Data) : int =
+    let rec calculatePoint' nums wins acc =
         match nums with
         | [] -> acc
         | h :: t ->
             if Set.contains h wins then
                 if acc = 0 then
-                    calculatePoint' t wins 1L
+                    calculatePoint' t wins 1
                 else
-                    calculatePoint' t wins (acc * 2L)
+                    calculatePoint' t wins (acc * 2)
             else
                 calculatePoint' t wins acc
 
-    calculatePoint' d.Cards d.WinningNumber 0L
+    calculatePoint' d.Cards d.WinningNumber 0
 
-let problem1 (input: string list) : int64 =
+let countWinCards (d: Data) : int =
+    let rec countWinCards' nums wins acc =
+        match nums with
+        | [] -> acc
+        | h :: t ->
+            if Set.contains h wins then
+                countWinCards' t wins (acc + 1)
+            else
+                countWinCards' t wins acc
+
+    countWinCards' d.Cards d.WinningNumber 0
+
+let problem1 (input: string list) : int =
     input |> List.map parseLine |> List.map calculatePoint |> List.sum
+
+let problem01 (input: string list) : int =
+    input
+    |> List.map parseLine
+    |> List.map countWinCards
+    |> List.map (fun n -> Math.Pow(2, double (n - 1)) |> int)
+    |> List.sum
+
+let copyCard (ds: Data list) : Map<int, int> =
+    let rec copyCard' i ds acc =
+        match ds with
+        | [] -> acc
+        | h :: t ->
+            let p = countWinCards h
+            let count = Map.find i acc
+
+            let acc' =
+                seq { (i + 1) .. (i + p) }
+                |> Seq.fold
+                    (fun acc j ->
+                        let n = Map.find j acc
+                        Map.add j (n + count) acc)
+                    acc
+
+            copyCard' (i + 1) t acc'
+
+    let cardCount =
+        seq { 1 .. ds.Length } |> Seq.fold (fun acc i -> Map.add i 1 acc) Map.empty
+
+    copyCard' 1 ds cardCount
+
+let problem2 (input: string list) : int =
+    input |> List.map parseLine |> copyCard |> Map.values |> Seq.sum
 
 let testInput =
     [ "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53"
@@ -53,7 +98,13 @@ let testInput =
 
 // 13
 problem1 testInput
+problem01 testInput
+
+// 30
+problem2 testInput
 
 let input = readInput "../input.txt"
 // 21138
 problem1 input
+// 7185540
+problem2 input
