@@ -80,4 +80,5 @@ let testData = parseInput testInput
 problem1 testData
 
 let input = readInput "../input.txt" |> parseInput
+// 551761867
 problem1 input
