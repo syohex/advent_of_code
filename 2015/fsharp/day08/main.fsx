@@ -13,15 +13,33 @@ let parseLine (s: string) : int =
 
     f (s |> Seq.toList |> List.tail) 0
 
+let encode (s: string) : int =
+    let rec f cs acc =
+        match cs with
+        | [] -> acc - s.Length
+        | '\\' :: t
+        | '"' :: t -> f t (acc + 2)
+        | _ :: t -> f t (acc + 1)
+
+    f (Seq.toList s) 2
+
 let problem1 (lines: string list) : int =
     lines |> List.map parseLine |> List.reduce (+)
 
+let problem2 (lines: string list) : int =
+    lines |> List.map encode |> List.reduce (+)
+
 let testInput = [ "\"\""; "\"abc\""; "\"aaa\\\"aaa\""; "\"\\x27\"" ]
-// 23, 11
+// 12
 problem1 testInput
+// 19
+problem2 testInput
 
 let input = File.ReadLines("../../input/day08.txt") |> Seq.toList
 
 let ret1 = problem1 input
 // 1371
 printfn "ret1=%d" ret1
+
+let ret2 = problem2 input
+printfn "ret2=%d" ret2
