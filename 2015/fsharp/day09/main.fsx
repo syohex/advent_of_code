@@ -32,13 +32,13 @@ let toGraph (data: Data list) : Map<string, (string * int) list> =
 
     f data Map.empty
 
-let problem1 (graph: Map<string, (string * int) list>) : int =
+let getDistance (graph: Map<string, (string * int) list>) (cmpFn: int -> int -> int) (baseValue: int) : int =
     let rec f node total visited nodes =
         if Set.count visited = nodes then
             total
         else
             match Map.tryFind node graph with
-            | None -> Int32.MaxValue
+            | None -> baseValue
             | Some(nexts) ->
                 nexts
                 |> List.fold
@@ -46,13 +46,16 @@ let problem1 (graph: Map<string, (string * int) list>) : int =
                         if Set.contains next visited then
                             acc
                         else
-                            min acc <| f next (total + distance) (Set.add next visited) nodes)
-                    Int32.MaxValue
+                            cmpFn acc <| f next (total + distance) (Set.add next visited) nodes)
+                    baseValue
 
     let nodes = graph |> Map.count
 
     graph
-    |> Map.fold (fun acc start _ -> min acc <| f start 0 (Set.empty |> Set.add start) nodes) Int32.MaxValue
+    |> Map.fold (fun acc start _ -> cmpFn acc <| f start 0 (Set.empty |> Set.add start) nodes) baseValue
+
+let problem1 (graph: Map<string, (string * int) list>) : int = getDistance graph min Int32.MaxValue
+let problem2 (graph: Map<string, (string * int) list>) : int = getDistance graph max 0
 
 let testGraph =
     [ "London to Dublin = 464"
@@ -63,9 +66,14 @@ let testGraph =
 
 // 605
 problem1 testGraph
+// 982
+problem2 testGraph
 
 let input = File.ReadLines("../../input/day09.txt") |> Seq.toList
 let graph = input |> List.map parseLine |> toGraph
 let ret1 = problem1 graph
 // 251
 printfn "ret1 = %d" ret1
+
+let ret2 = problem2 graph
+printfn "ret2 = %d" ret2
