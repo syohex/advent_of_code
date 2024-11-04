@@ -73,7 +73,7 @@ let inline findValue (op: Operand) (table: Map<string, uint16>) : Option<uint16>
     | Int v -> Some(v)
     | Symbol s -> Map.tryFind s table
 
-let run (ops: Op list) : Map<string, uint16> =
+let run (ops: Op list) (table: Map<string, uint16>) : Map<string, uint16> =
     let rec f ops table unresolved =
         match ops with
         | [] ->
@@ -84,7 +84,10 @@ let run (ops: Op list) : Map<string, uint16> =
             match h with
             | Assign { Operand = op; Destination = d } ->
                 match findValue op table with
-                | Some(v) -> f t (Map.add d v table) unresolved
+                | Some(v) ->
+                    match Map.tryFind d table with
+                    | None -> f t (Map.add d v table) unresolved
+                    | Some _ -> f t table unresolved
                 | None -> f t table (h :: unresolved)
             | And { Op1 = op1
                     Op2 = op2
@@ -115,10 +118,14 @@ let run (ops: Op list) : Map<string, uint16> =
                 | Some(v) -> f t (Map.add d ~~~v table) unresolved
                 | None -> f t table (h :: unresolved)
 
-    f ops Map.empty []
+    f ops table []
 
 
-let problem1 (input: Op list) : uint16 = input |> run |> Map.find "a"
+let problem1 (input: Op list) : uint16 = run input Map.empty |> Map.find "a"
+
+let problem2 (input: Op list) (initialB: uint16) : uint16 =
+    let table = Map.empty |> Map.add "b" initialB
+    run input table |> Map.find "a"
 
 let testInput =
     [ "123 -> x"
@@ -139,3 +146,7 @@ let input =
 let ret1 = problem1 input
 // 16076
 printfn "ret1=%d" ret1
+
+let ret2 = problem2 input ret1
+// 2797
+printfn "ret2=%d" ret2
