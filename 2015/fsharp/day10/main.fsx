@@ -38,4 +38,6 @@ seq { 1..5 } |> Seq.map (fun i -> problem1 "1" i)
 
 let input = "3113322113"
 let ret1 = problem1 input 40
+let ret2 = problem1 input 50
 printfn "ret1=%d" ret1
+printfn "ret2=%d" ret2
