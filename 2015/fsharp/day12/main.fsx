@@ -91,7 +91,28 @@ let rec sumNumbersInJson (v: JSON) : int =
     | JNumber v -> v
     | _ -> 0
 
+let rec sumNumbersInJsonExceptRed (v: JSON) : int =
+    match v with
+    | JArray vs -> vs |> List.fold (fun acc v -> acc + sumNumbersInJsonExceptRed v) 0
+    | JObject vs ->
+        let hasRed =
+            vs
+            |> List.exists (fun (_, v) ->
+                match v with
+                | JString s when s = "red" -> true
+                | _ -> false)
+
+        if hasRed then
+            0
+        else
+            vs
+            |> List.map snd
+            |> List.fold (fun acc v -> acc + sumNumbersInJsonExceptRed v) 0
+    | JNumber v -> v
+    | _ -> 0
+
 let problem1 = parseJson >> sumNumbersInJson
+let problem2 = parseJson >> sumNumbersInJsonExceptRed
 
 // 6
 problem1 "[1,2,3]"
@@ -106,6 +127,18 @@ problem1 "{\"a\":[-1,-1]}"
 // 0
 problem1 "[-1,{\"a\":1}]"
 
+// 6
+problem2 "[1,2,3]"
+// 4
+problem2 "[1,{\"c\":\"red\",\"b\":2},3]"
+// 0
+problem2 "{\"d\":\"red\",\"e\":[1,2,3,4],\"f\":5}"
+// 6
+problem2 "[1,\"red\",5]"
+
 let input = File.ReadLines("../../input/day12.txt") |> Seq.head
 let ret1 = problem1 input
 printfn "ret1 = %d" ret1
+
+let ret2 = problem2 input
+printfn "ret2 = %d" ret2
