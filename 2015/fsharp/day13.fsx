@@ -79,6 +79,17 @@ problem1 testGraph
 let data = File.ReadAllLines("../input/day13.txt") |> Array.toList
 let graph = parse data
 
+let graph2 =
+    graph
+    |> Map.fold (fun acc k v -> Map.add k (Map.add "me" 0 v) acc) Map.empty
+    |> fun m ->
+        let v = Map.keys graph |> Seq.fold (fun acc k -> Map.add k 0 acc) Map.empty
+        Map.add "me" v m
+
+printfn "%A" graph2
+
 let ret1 = problem1 graph
+let ret2 = problem1 graph2
 
 printfn "problem1 = %d" ret1
+printfn "problem2 = %d" ret2
