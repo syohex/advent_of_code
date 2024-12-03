@@ -29,7 +29,7 @@ let testInput =
 // [0, 0, 3, 3, 3, -1, -1, -3, -3]
 testInput |> List.map problem1
 
-let input = File.ReadLines("../../input/day01.txt") |> Seq.head
+let input = File.ReadLines("../input/day01.txt") |> Seq.head
 
 // 232
 problem1 input

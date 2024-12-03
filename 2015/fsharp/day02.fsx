@@ -46,7 +46,7 @@ Problem2 [ Parse "2x3x4" ]
 // 14
 Problem2 [ Parse "1x1x10" ]
 
-let input = File.ReadLines("../../input/day02.txt") |> Seq.map Parse |> Seq.toList
+let input = File.ReadLines("../input/day02.txt") |> Seq.map Parse |> Seq.toList
 // 1598414
 Problem1 input
 

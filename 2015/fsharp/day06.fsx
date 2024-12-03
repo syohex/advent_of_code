@@ -103,7 +103,7 @@ let problem2 (input: Data list) : int =
     |> Seq.reduce (+)
 
 let input =
-    File.ReadLines("../../input/day06.txt") |> Seq.map parseInput |> Seq.toList
+    File.ReadLines("../input/day06.txt") |> Seq.map parseInput |> Seq.toList
 
 let ret1 = problem1 input
 // 400410

@@ -136,7 +136,7 @@ problem2 "{\"d\":\"red\",\"e\":[1,2,3,4],\"f\":5}"
 // 6
 problem2 "[1,\"red\",5]"
 
-let input = File.ReadLines("../../input/day12.txt") |> Seq.head
+let input = File.ReadLines("../input/day12.txt") |> Seq.head
 let ret1 = problem1 input
 printfn "ret1 = %d" ret1
 

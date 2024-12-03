@@ -77,7 +77,7 @@ isNiceString2 "uurcxstgmygtbstg"
 // false
 isNiceString2 "ieodomkazucvgmuy"
 
-let input = File.ReadLines("../../input/day05.txt") |> Seq.toList
+let input = File.ReadLines("../input/day05.txt") |> Seq.toList
 let problem1 = input |> List.filter isNiceString |> List.length
 // 258
 printfn "problem1: %d" problem1

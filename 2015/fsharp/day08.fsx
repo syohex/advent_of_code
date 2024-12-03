@@ -35,7 +35,7 @@ problem1 testInput
 // 19
 problem2 testInput
 
-let input = File.ReadLines("../../input/day08.txt") |> Seq.toList
+let input = File.ReadLines("../input/day08.txt") |> Seq.toList
 
 let ret1 = problem1 input
 // 1371

@@ -69,7 +69,7 @@ problem1 testGraph
 // 982
 problem2 testGraph
 
-let input = File.ReadLines("../../input/day09.txt") |> Seq.toList
+let input = File.ReadLines("../input/day09.txt") |> Seq.toList
 let graph = input |> List.map parseLine |> toGraph
 let ret1 = problem1 graph
 // 251

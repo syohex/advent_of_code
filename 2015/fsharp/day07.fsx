@@ -141,7 +141,7 @@ let testInput =
 run testInput
 
 let input =
-    File.ReadLines("../../input/day07.txt") |> Seq.map parseInput |> Seq.toList
+    File.ReadLines("../input/day07.txt") |> Seq.map parseInput |> Seq.toList
 
 let ret1 = problem1 input
 // 16076

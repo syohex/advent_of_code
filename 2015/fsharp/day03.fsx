@@ -56,7 +56,7 @@ problem2 "^>v<"
 // 11
 problem2 "^v^v^v^v^v"
 
-let input = File.ReadLines("../../input/day03.txt") |> Seq.head
+let input = File.ReadLines("../input/day03.txt") |> Seq.head
 
 problem1 input
 problem2 input
