@@ -73,7 +73,7 @@ void Test() {
 int main() {
     Test();
 
-    std::ifstream file("../../input/day01.txt");
+    std::ifstream file("../input/day01.txt");
     std::string input;
     file >> input;
 

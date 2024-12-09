@@ -107,7 +107,7 @@ void Test() {
 int main() {
     Test();
 
-    std::ifstream file("../../input/day02.txt");
+    std::ifstream file("../input/day02.txt");
     std::vector<Data> input;
 
     std::string tmp;
