@@ -1,13 +1,13 @@
 open System.IO
 open System.Text.RegularExpressions
 
-type Data =
+type Reindeer =
     { Name: string
       Velocity: int
       FlyingSeconds: int
       RestingSeconds: int }
 
-let parse (input: string list) : Data list =
+let parse (input: string list) : Reindeer list =
     let re =
         new Regex(@"(\S+) can fly (\S+) km/s for (\S+) seconds, but then must rest for (\S+) seconds.")
 
@@ -23,25 +23,25 @@ let parse (input: string list) : Data list =
         else
             failwithf "invalid input %s" s)
 
-let afterNSeconds (seconds: int) (d: Data) : int =
-    let rec afterNSeconds' seconds isFlying (d: Data) acc =
+let afterNSeconds (seconds: int) (r: Reindeer) : int =
+    let rec afterNSeconds' seconds isFlying (r: Reindeer) acc =
         if seconds <= 0 then
             acc
         else
             let actionTime =
                 if isFlying then
-                    min seconds d.FlyingSeconds
+                    min seconds r.FlyingSeconds
                 else
-                    min seconds d.RestingSeconds
+                    min seconds r.RestingSeconds
 
             if isFlying then
-                afterNSeconds' (seconds - actionTime) false d (acc + d.Velocity * actionTime)
+                afterNSeconds' (seconds - actionTime) false r (acc + r.Velocity * actionTime)
             else
-                afterNSeconds' (seconds - actionTime) true d acc
+                afterNSeconds' (seconds - actionTime) true r acc
 
-    afterNSeconds' seconds true d 0
+    afterNSeconds' seconds true r 0
 
-let problem1 (seconds: int) (input: Data list) : int =
+let problem1 (seconds: int) (input: Reindeer list) : int =
     input
     |> List.map (fun d -> afterNSeconds seconds d)
     |> List.sortDescending
@@ -51,46 +51,49 @@ type State =
     | Flying of int
     | Resting of int
 
-let updateState ((d, current, distance): Data * State * int) : Data * State * int =
-    match current with
+let updateState (d: Reindeer) ((state, distance): State * int) : State * int =
+    match state with
     | Flying n ->
         let distance = distance + d.Velocity
 
         if n = 1 then
-            d, Resting d.RestingSeconds, distance
+            Resting d.RestingSeconds, distance
         else
-            d, Flying(n - 1), distance
+            Flying(n - 1), distance
     | Resting n ->
         if n = 1 then
-            d, Flying d.FlyingSeconds, distance
+            Flying d.FlyingSeconds, distance
         else
-            d, Resting(n - 1), distance
+            Resting(n - 1), distance
 
-let rec doRace (seconds: int) (states: (Data * State * int) list) (points: Map<string, int>) : int =
+let givePoint (winners: Reindeer seq) (points: Map<string, int>) : Map<string, int> =
+    winners
+    |> Seq.fold
+        (fun acc w ->
+            let v = Map.tryFind w.Name acc |> Option.defaultValue 0
+            Map.add w.Name (v + 1) acc)
+        points
+
+let rec doRace (seconds: int) (states: Map<Reindeer, State * int>) (points: Map<string, int>) : int =
     if seconds = 0 then
         points |> Map.values |> Seq.max
     else
-        let states = states |> List.map (fun state -> updateState state)
-        let _, _, maxDistance = states |> List.maxBy (fun (_, _, distance) -> distance)
+        let states = states |> Map.map (fun r state -> updateState r state)
+        let maxDistance = states |> Map.fold (fun acc _ (_, distance) -> max acc distance) 0
 
         let winners =
-            states
-            |> List.fold (fun acc (d, _, distance) -> if distance = maxDistance then d :: acc else acc) []
+            states |> Map.filter (fun _ (_, distance) -> distance = maxDistance) |> Map.keys
 
-        let points =
-            winners
-            |> List.fold
-                (fun acc winner ->
-                    match Map.tryFind winner.Name acc with
-                    | Some(v) -> Map.add winner.Name (v + 1) acc
-                    | None -> Map.add winner.Name 1 acc)
-                points
+        let points = givePoint winners points
 
         doRace (seconds - 1) states points
 
 
-let problem2 (seconds: int) (input: Data list) : int =
-    let states = input |> List.map (fun d -> d, Flying d.FlyingSeconds, 0)
+let problem2 (seconds: int) (input: Reindeer list) : int =
+    let states =
+        input
+        |> List.fold (fun acc r -> Map.add r (Flying r.FlyingSeconds, 0) acc) Map.empty
+
     doRace seconds states Map.empty
 
 let testInput =
