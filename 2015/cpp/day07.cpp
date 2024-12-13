@@ -92,6 +92,9 @@ auto Evaluate(const Expression &exp, map<string, int> &env) -> bool {
     if (!CanEvaluate(exp, env)) {
         return false;
     }
+    if (env.contains(exp.dest)) {
+        return true;
+    }
 
     switch (exp.op) {
     case Op::Assignment:
@@ -185,7 +188,15 @@ int main() {
     int ret1 = Problem1(input, "a");
     assert(ret1 == 16076);
 
+    vector<Expression> input2;
+    input2.push_back({.op = Op::Assignment, .src1 = to_string(ret1), .dest = "b"});
+    copy(input.begin(), input.end(), back_inserter(input2));
+
+    int ret2 = Problem1(input2, "a");
+    assert(ret2 == 2797);
+
     printf("ret1 = %d\n", ret1);
+    printf("ret2 = %d\n", ret2);
 
     return 0;
 }
