@@ -13,13 +13,15 @@ type Score =
     { Capacity: int
       Durability: int
       Flavor: int
-      Texture: int }
+      Texture: int
+      Calorie: int }
 
     static member empty: Score =
         { Capacity = 0
           Durability = 0
           Flavor = 0
-          Texture = 0 }
+          Texture = 0
+          Calorie = 0 }
 
     static member total(s: Score) : int =
         if s.Capacity <= 0 || s.Durability <= 0 || s.Flavor <= 0 || s.Texture <= 0 then
@@ -45,28 +47,31 @@ let getScore (p: Property) (spoons: int) (acc: Score) : Score =
     { Capacity = p.Capacity * spoons + acc.Capacity
       Durability = p.Durability * spoons + acc.Durability
       Flavor = p.Flavor * spoons + acc.Flavor
-      Texture = p.Texture * spoons + acc.Texture }
+      Texture = p.Texture * spoons + acc.Texture
+      Calorie = p.Calories * spoons + acc.Calorie }
 
-let rec findBestScore (properties: Property list) (remains: int) (spoons: int) (score: Score) : int =
+let rec findBestScore (properties: Property list) (spoons: int) (predicate: Score -> bool) (score: Score) : int =
     match properties with
     | [] -> failwith "never reach here"
     | h :: [] ->
         let score = getScore h spoons score
-        Score.total score
+        if predicate score then Score.total score else 0
     | h :: t ->
-        let limit = spoons - remains + 1
+        let limit = spoons - (List.length t)
 
         seq { 1..limit }
         |> Seq.fold
             (fun acc n ->
                 let score = getScore h n score
-                let ret = findBestScore t (remains - 1) (spoons - n) score
+                let ret = findBestScore t (spoons - n) predicate score
                 max acc ret)
             0
 
 let problem1 (input: Property list) : int =
-    let remains = List.length input
-    findBestScore input remains 100 Score.empty
+    findBestScore input 100 (fun _ -> true) Score.empty
+
+let problem2 (input: Property list) : int =
+    findBestScore input 100 (fun s -> s.Calorie = 500) Score.empty
 
 let testInput =
     [ "Butterscotch: capacity -1, durability -2, flavor 6, texture 3, calories 8"
@@ -75,7 +80,16 @@ let testInput =
 let testData = testInput |> List.map parse
 // 62842880
 problem1 testData
+// 57600000
+problem2 testData
 
-let input = File.ReadAllLines("../input/day15.txt") |> Array.map parse |> Array.toList
+let input =
+    File.ReadAllLines("../input/day15.txt") |> Array.map parse |> Array.toList
+
 let ret1 = problem1 input
+// 21367368
 printfn "ret1 = %d" ret1
+
+let ret2 = problem2 input
+// 1766400
+printfn "ret2 = %d" ret2
