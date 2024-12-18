@@ -48,4 +48,5 @@ let ret1 = problem1 input 150
 printfn "ret1 = %d" ret1
 
 let ret2 = problem2 input 150
+// 17
 printfn "ret2 = %d" ret2
