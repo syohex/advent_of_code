@@ -1,46 +1,35 @@
 open System
 open System.IO
 
-let parse (input: string list) : Map<string, string list> * string =
+let parse (input: string list) : string * (string * string) list =
     let rec parse' (input: string list) table =
         match input with
         | [] -> failwith "never reach here"
         | h :: t ->
             if String.IsNullOrEmpty(h) then
-                table, List.head t
+                List.head t, List.rev table
             else
                 let parts = h.Split(" => ")
+                parse' t ((parts.[0], parts.[1]) :: table)
 
-                let table =
-                    match Map.tryFind parts.[0] table with
-                    | Some(v) -> Map.add parts.[0] (parts.[1] :: v) table
-                    | None -> Map.add parts.[0] [ parts.[1] ] table
+    parse' input []
 
-                parse' t table
-
-    parse' input Map.empty
-
-let problem1 (input: string) (table: Map<string, string list>) : int =
+let problem1 (molecule: string) (table: (string * string) list) : int =
     let rec f i acc =
-        if i >= input.Length then
+        if i >= molecule.Length then
             Set.count acc
         else
-            let prev = input.Substring(0, i)
-            let substr = input.Substring(i)
+            let prev = molecule.Substring(0, i)
+            let substr = molecule.Substring(i)
 
             let acc =
                 table
-                |> Map.fold
-                    (fun acc k v ->
-                        if substr.StartsWith(k) then
-                            let ss = substr.Substring(k.Length)
-
-                            v
-                            |> List.fold
-                                (fun acc replaced ->
-                                    let s = prev + replaced + ss
-                                    Set.add s acc)
-                                acc
+                |> List.fold
+                    (fun acc (orig, replaced) ->
+                        if substr.StartsWith(orig) then
+                            let rest = substr.Substring(orig.Length)
+                            let replaced = prev + replaced + rest
+                            Set.add replaced acc
                         else
                             acc)
                     acc
@@ -58,13 +47,13 @@ HOH
 """
     |> fun s -> s.Split('\n') |> Array.toList
 
-let testTable, testStr = parse testInput
+let testMolecule, testTable = parse testInput
 // 4
-problem1 testStr testTable
+problem1 testMolecule testTable
 
 let input = File.ReadLines("../input/day19.txt") |> Seq.toList
-let table, inputStr = parse input
+let molecule, table = parse input
 
-let ret1 = problem1 inputStr table
+let ret1 = problem1 molecule table
 // 576
 printfn "ret1 = %d" ret1
