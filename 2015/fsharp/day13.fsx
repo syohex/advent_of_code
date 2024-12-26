@@ -1,3 +1,4 @@
+open System
 open System.IO
 
 let parse (input: string list) : Map<string, Map<string, int>> =
@@ -36,13 +37,12 @@ let problem1 (graph: Map<string, Map<string, int>>) : int =
         graph |> Map.find person1 |> Map.find person2
 
     let rec problem1' node graph visited acc =
+        let visited = Set.add node visited
         if nodes = Set.count visited then
             let point1 = getPoint "Alice" node graph
             let point2 = getPoint node "Alice" graph
             acc + point1 + point2
         else
-            let visited = Set.add node visited
-
             Map.find node graph
             |> Map.fold
                 (fun maxPoint next point ->
@@ -50,9 +50,9 @@ let problem1 (graph: Map<string, Map<string, int>>) : int =
                         maxPoint
                     else
                         let point' = acc + point + getPoint next node graph
-                        let p = problem1' next graph (Set.add next visited) point'
+                        let p = problem1' next graph visited point'
                         max maxPoint p)
-                0
+                Int32.MinValue
 
     problem1' "Alice" graph Set.empty 0
 
@@ -85,8 +85,6 @@ let graph2 =
     |> fun m ->
         let v = Map.keys graph |> Seq.fold (fun acc k -> Map.add k 0 acc) Map.empty
         Map.add "me" v m
-
-printfn "%A" graph2
 
 let ret1 = problem1 graph
 let ret2 = problem1 graph2
