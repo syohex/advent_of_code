@@ -165,6 +165,7 @@ let inputScore = Array.init 26 (fun i -> 61 + i)
 
 // "GJFMDHNBCIVTUWEQYALSPXZORK"
 let ret1 = problem1 inputGraph
+// 1050
 let ret2 = problem2 inputGraph 5 inputScore
 
 printfn "problem1 = %s" ret1
