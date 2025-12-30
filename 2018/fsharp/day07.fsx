@@ -2,8 +2,6 @@ open System
 open System.IO
 open System.Text.RegularExpressions
 
-type Graph = Map<char, Set<char>>
-
 type Node =
     { Parents: char list
       Children: char list }
@@ -47,6 +45,14 @@ let findRoot (graph: Map<char, Node>) : char list =
     |> Seq.toList
     |> List.sort
 
+let canAssignNode (node: char) (visited: Set<char>) (graph: Map<char, Node>) : bool =
+    if Set.contains node visited then
+        false
+    else
+        match Map.tryFind node graph with
+        | Some v -> List.forall (fun n -> Set.contains n visited) v.Parents
+        | None -> true
+
 let problem1 (graph: Map<char, Node>) : string =
     let rec f nodes visited (acc: char list) =
         match nodes with
@@ -62,20 +68,72 @@ let problem1 (graph: Map<char, Node>) : string =
 
             let nodes =
                 List.append nexts t
-                |> List.filter (fun n -> not <| Set.contains n visited)
-                |> List.filter (fun n ->
-                    let parents =
-                        match Map.tryFind n graph with
-                        | Some v -> v.Parents
-                        | None -> []
-
-                    parents |> List.forall (fun p -> Set.contains p visited))
+                |> List.filter (fun n -> canAssignNode n visited graph)
                 |> List.sort
 
             f nodes visited acc
 
     let roots = findRoot graph
     f roots Set.empty []
+
+let assignTask
+    (nodes: char list)
+    (workers: Map<char, int>)
+    (workerNum: int)
+    (visited: Set<char>)
+    (graph: Map<char, Node>)
+    (scoreTable: int[])
+    : Map<char, int> * char list =
+    let rec f nodes workers acc =
+        if Map.count workers >= workerNum then
+            workers, List.append nodes acc |> List.sort
+        else
+            match nodes with
+            | [] -> workers, acc
+            | h :: t ->
+                if canAssignNode h visited graph then
+                    let index = (h - 'A') |> int
+                    let workers = Map.add h (scoreTable.[index]) workers
+                    f t workers acc
+                else
+                    f t workers (h :: acc)
+
+    f nodes workers []
+
+let problem2 (graph: Map<char, Node>) (workerNum: int) (scoreTable: int[]) : int =
+    let rec f nodes workers visited acc =
+        if List.isEmpty nodes && Map.isEmpty workers then
+            acc
+        else
+            let minNode, minValue =
+                workers
+                |> Map.fold
+                    (fun (minNode, minValue) node time -> if time < minValue then node, time else minNode, minValue)
+                    ('?', Int32.MaxValue)
+
+            let oldWorker = workers
+
+            let visited, acc, workers, nodes =
+                if minNode = '?' then
+                    visited, acc, workers, nodes
+                else
+                    let workers = workers |> Map.remove minNode |> Map.map (fun _ v -> v - minValue)
+
+                    let nodes =
+                        match Map.tryFind minNode graph with
+                        | Some v -> List.append nodes v.Children |> Set.ofList |> Set.toList |> List.sort
+                        | None -> nodes
+
+                    Set.add minNode visited, acc + minValue, workers, nodes
+
+            match nodes with
+            | [] -> workers |> Map.values |> Seq.fold (+) acc
+            | _ ->
+                let workers, restTasks = assignTask nodes workers workerNum visited graph scoreTable
+                f restTasks workers visited acc
+
+    let roots = findRoot graph
+    f roots Map.empty Set.empty 0
 
 let testGraph1 =
     [ "Step C must be finished before step A can begin."
@@ -88,8 +146,13 @@ let testGraph1 =
     |> List.map parseLine
     |> toGraph
 
+let testScore = Array.init 26 (fun i -> 1 + i)
+
 // "CABDFE"
 problem1 testGraph1
+
+// 15
+problem2 testGraph1 2 testScore
 
 let inputGraph =
     "../input/day07.txt"
@@ -98,7 +161,11 @@ let inputGraph =
     |> List.map parseLine
     |> toGraph
 
+let inputScore = Array.init 26 (fun i -> 61 + i)
+
 // "GJFMDHNBCIVTUWEQYALSPXZORK"
 let ret1 = problem1 inputGraph
+let ret2 = problem2 inputGraph 5 inputScore
 
 printfn "problem1 = %s" ret1
+printfn "problem2 = %d" ret2
