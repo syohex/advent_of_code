@@ -78,10 +78,10 @@ auto parse_input(const std::string &input) -> std::tuple<int, int> {
     return std::tuple<int, int>({players, points});
 }
 
-auto problem1(int players, int points) -> int {
+auto problem1(int players, int points) -> int64_t {
     Node *head = new Node(0);
 
-    std::vector<int> player_scores(players, 0);
+    std::vector<int64_t> player_scores(players, 0);
     int id = 0;
 
     Node *p = head;
@@ -121,8 +121,10 @@ int main() {
     std::getline(std::cin, input);
 
     auto [players, points] = parse_input(input);
-    int ret1 = problem1(players, points);
+    auto ret1 = problem1(players, points);
+    auto ret2 = problem1(players, points * 100);
 
     std::println("problem1 = {}", ret1);
+    std::println("problem2 = {}", ret2);
     return 0;
 }
