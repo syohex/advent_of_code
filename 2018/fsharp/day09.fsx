@@ -11,33 +11,27 @@ let parseInput (s: string) : (int * int) =
         failwithf "invalid input: %s" s
 
 let problem1 (players: int) (points: int) : int =
-    let rec f point player pos marbles scores =
+    let rec f point player pos length marbles scores =
         if point > points then
             if Map.isEmpty scores then
                 0
             else
                 scores |> Map.values |> Seq.max
+        else if point % 23 = 0 then
+            let removePos = (pos + length - 7) % length
+            let back = List.skip (removePos + 1) marbles
+            let v = Map.tryFind player scores |> Option.defaultValue 0
+            let scores = Map.add player (v + point + List.head back) scores
+            let marbles = List.removeAt (removePos + 1) marbles
+            let player = (player + 1) % players
+            f (point + 1) player removePos (length - 1) marbles scores
         else
-            let length = List.length marbles
+            let insertPos = (pos + 2) % length
+            let marbles = List.insertAt (insertPos + 1) point marbles
+            let player = (player + 1) % players
+            f (point + 1) player insertPos (length + 1) marbles scores
 
-            if point % 23 = 0 then
-                let insertPos = (pos + length - 7) % length
-                let front = List.take (insertPos + 1) marbles
-                let back = List.skip (insertPos + 1) marbles
-                let v = Map.tryFind player scores |> Option.defaultValue 0
-                let scores = Map.add player (v + point + List.head back) scores
-                let marbles = front @ List.tail back
-                let player = (player + 1) % players
-                f (point + 1) player insertPos marbles scores
-            else
-                let insertPos = (pos + 2) % length
-                let front = List.take (insertPos + 1) marbles
-                let back = List.skip (insertPos + 1) marbles
-                let marbles = front @ [ point ] @ back
-                let player = (player + 1) % players
-                f (point + 1) player insertPos marbles scores
-
-    f 1 0 0 [ 0 ] Map.empty
+    f 1 0 0 1 [ 0 ] Map.empty
 
 // 32
 problem1 9 25
@@ -49,11 +43,12 @@ problem1 13 7999
 problem1 17 1104
 // 54718
 problem1 21 6111
-// 37305
+// // 37305
 problem1 30 5807
 
 let players, points =
     "../input/day09.txt" |> File.ReadLines |> Seq.head |> parseInput
+
 let ret1 = problem1 players points
 
 // 394486
