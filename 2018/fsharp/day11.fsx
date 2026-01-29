@@ -33,6 +33,33 @@ let findLargestTotalPower (size: int) (squareSize: int) (grid: int[,]) : int * i
     let limit = size - squareSize
     f 0 0 limit (-1, -1) Int32.MinValue
 
+let gridToPrefixGrid (size: int) (grid: int[,]) : int[,] =
+    let acc = Array2D.zeroCreate (size + 1) (size + 1)
+
+    for x in 1..size do
+        for y in 1..size do
+            acc.[x, y] <- acc.[x - 1, y] + acc.[x, y - 1] - acc.[x - 1, y - 1] + grid[x - 1, y - 1]
+
+    acc
+
+let toSumGrid (squareSize: int) (prefixGrid: int[,]) : int[,] =
+    let size = (Array2D.length1 prefixGrid) - 1
+    let sumGridSize = size - squareSize + 1
+
+    let ret = Array2D.zeroCreate sumGridSize sumGridSize
+
+    for i in 0 .. (sumGridSize - 1) do
+        for j in 0 .. (sumGridSize - 1) do
+            let power =
+                prefixGrid.[i + squareSize, j + squareSize]
+                - prefixGrid.[i, j + squareSize]
+                - prefixGrid.[i + squareSize, j]
+                + prefixGrid.[i, j]
+
+            ret.[i, j] <- power
+
+    ret
+
 let problem1 (gridSerialNumber: int) : int * int * int =
     let grid = Array2D.zeroCreate 300 300
 
@@ -51,11 +78,17 @@ let problem2 (gridSerialNumber: int) : int * int * int * int =
             let v = calculatePowerLevel x y gridSerialNumber
             grid.[x - 1, y - 1] <- v
 
+    let prefixGrid = gridToPrefixGrid 300 grid
+
     seq { 1..300 }
-    |> Seq.map (fun size -> findLargestTotalPower 300 size grid, size)
-    |> Seq.sortWith (fun ((_, _, power1), _) ((_, _, power2), _) -> compare power2 power1)
+    |> Seq.map (fun size ->
+        toSumGrid size prefixGrid
+        |> Array2D.mapi (fun x y power -> x + 1, y + 1, size, power)
+        |> Seq.cast<int * int * int * int>
+        |> Seq.sortWith (fun (_, _, _, power1) (_, _, _, power2) -> compare power2 power1)
+        |> Seq.head)
+    |> Seq.sortWith (fun (_, _, _, power1) (_, _, _, power2) -> compare power2 power1)
     |> Seq.head
-    |> fun ((x, y, power), size) -> x, y, size, power
 
 let test () : unit =
     // -5
