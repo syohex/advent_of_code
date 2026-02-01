@@ -62,6 +62,12 @@ let problem1 (state: string) (table: Map<int, char>) (count: int64) : int =
 
     f 0 (Seq.toList state) 0
 
+let problem2 (state: string) (table: Map<int, char>) (count: int64) : int64 =
+    let ret = problem1 state table 100
+    let ret1 = problem1 state table 101
+    let diff = (ret1 - ret) |> int64
+    int64 ret + diff * (count - 100L)
+
 let testInput =
     "initial state: #..#.#..##......###...###
 
@@ -88,7 +94,7 @@ problem1 testState testTable 20
 let state, table =
     "../input/day12.txt" |> File.ReadAllLines |> Seq.toList |> parseInput
 let ret1 = problem1 state table 20L
-let ret2 = problem1 state table 50000000000L
+let ret2 = problem2 state table 50000000000L
 
 printfn "problem1 = %d" ret1
 printfn "problem2 = %d" ret2
